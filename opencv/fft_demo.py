@@ -237,7 +237,7 @@ def do_filter(_=None):
 if __name__ == '__main__':
     global fft_mat
 
-    img = cv2.imread('images/33_origin.jpg',0)
+    img = cv2.imread('images/Fig0413(a)(original_test_pattern).tif',0)
     # img = cv2.imread('images/20190405132632177212_spot_origin.jpg',0)
     # img = cv2.imread('images/Fig0413(a)(original_test_pattern).tif',0)
     rows, cols = img.shape[:2]
