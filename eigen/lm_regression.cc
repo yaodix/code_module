@@ -90,6 +90,7 @@ Point2DVector GeneratePoints(const unsigned int numberOfPoints)
 {
   Point2DVector points;
   // Model y = 2*x + 5 with some noise (meaning that the resulting minimization should be about (2,5)
+  std::cout << "target line is y = 2*x + 5" << std::endl;
   for(unsigned int i = 0; i < numberOfPoints; ++i)
     {
       double x = static_cast<double>(i);
