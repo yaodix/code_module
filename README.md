@@ -2,8 +2,9 @@
 
 
 ## opencv
-1. fft-频域处理（python） 
-
+1. fft-频域处理(python)  
+ 理想滤波、巴特沃兹滤波和高斯滤波的高通、低通滤波演示  
+ 
 ![image](https://github.com/yaodix/code_module/blob/main/.pic/fft_demo.png)
 
 ## eigen  
@@ -26,3 +27,5 @@ x that minimizes the function:
  ```
 
 ## 数据结构
+1. 四叉树  
+![image](https://github.com/yaodix/code_module/blob/main/.pic/quadtree.gif)
