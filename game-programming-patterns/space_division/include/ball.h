@@ -62,11 +62,11 @@ public:
 
 
 private:
-    double x_ = 0.0;
+    double x_ = 0.0;  // 圆心坐标x
     double y_ = 0.0;
-    double dx_ = 0.0;
+    double dx_ = 0.0;  // x方向移动速度
     double dy_ = 0.0;
-    double r_ = 0.0;
+    double r_ = 0.0;   // 半径
     sf::CircleShape shape_;
     sf::Text speed_text_;
     static sf::Font ball_font_;

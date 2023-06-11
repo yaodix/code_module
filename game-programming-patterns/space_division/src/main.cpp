@@ -154,13 +154,13 @@ int main() {
         for (auto &b: ball_vec) {
             b->Update(dt);
         }
-        //double max_speed = GetMaxSpeed(ball_vec);
-        //max_speed = sqrt(max_speed);
-        //double avg_speed = GetAverageSpeed(ball_vec);
-        //std::cout << "AVG: " << avg_abs_speed << std::endl;
-        //for(auto &b: ball_vec){
-            //b->update_temperature_color(2 * average_speed, average_speed);
-        //}
+        // double max_speed = GetMaxSpeed(ball_vec);
+        // max_speed = sqrt(max_speed);
+        // double avg_speed = GetAverageSpeed(ball_vec);
+        // std::cout << "AVG: " << avg_speed << std::endl;
+        // for(auto &b: ball_vec){
+        //     b->UpdateTemperatureColor(2 * avg_speed, avg_speed);
+        // }
         //CheckCollisionsBruteforce(ball_vec);
         qtree->QtreeCheckCollisions(num_collisions);
         for (size_t i = 0; i < ball_vec.size(); ++i) {

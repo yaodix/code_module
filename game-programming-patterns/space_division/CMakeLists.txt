@@ -2,9 +2,9 @@ cmake_minimum_required(VERSION 3.12)
 
 project(quadtree)
 
+set(CMAKE_BUILD_TYPE Debug) 
 file(GLOB_RECURSE SOURCES src/*.cpp include/*.h)
 file(GLOB_RECURSE RESOURCES resources/fonts/*)
-
 set(SFML_STATIC_LIBRARIES TRUE)
 
 #Define path to your SFML root here (for example, C:/libs/SFML-2.5.0)
@@ -14,7 +14,7 @@ set(SFML_DIR "${SFML_ROOT}/lib/cmake/SFML")
 set(EXECUTABLE_NAME "quadtree")
 add_executable(${EXECUTABLE_NAME} ${SOURCES} ${RESOURCES})
 
-target_compile_options(${EXECUTABLE_NAME} PUBLIC -std=c++11 -O3)
+target_compile_options(${EXECUTABLE_NAME} PUBLIC -std=c++11 -O0)
 
 file(COPY ${RESOURCES} DESTINATION resources/fonts)
 

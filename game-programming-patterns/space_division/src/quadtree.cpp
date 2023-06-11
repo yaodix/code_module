@@ -25,7 +25,7 @@ bool Quadtree::InsertElement(Ball *b) {
     if(!intersects) {
         return false;
     }
-    if(GetSize() < kQuadtreeNodeCapacity) {
+    if(GetSize() < kQuadtreeNodeCapacity) {  // GetSize()children_.size();
         children_.push_back(b);
         return true;
     }

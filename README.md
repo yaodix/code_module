@@ -28,4 +28,5 @@ x that minimizes the function:
 
 ## 数据结构
 1. 四叉树  
+空间划分和碰撞检测  
 ![image](https://github.com/yaodix/code_module/blob/main/.pic/quadtree.gif)
