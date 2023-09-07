@@ -9,7 +9,7 @@
           "name": "g++ - Build and debug active file",
           "type": "cppdbg",
           "request": "launch",
-          "program": "${workspaceFolder}/opencv/flann/knn", // 重要，一般要修改该路径，此路径是相对activae file，与task.json中 -o输出内容一致
+          "program": "${workspaceFolder}/opencv/flann/flann_demo", // 重要，一般要修改该路径，此路径是相对activae file，与task.json中 -o输出内容一致
           "args": [], // 存放argv参数
           "stopAtEntry": false,
           "cwd": "${fileDirname}",

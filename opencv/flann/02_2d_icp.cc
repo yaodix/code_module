@@ -101,7 +101,7 @@ cv::Point2f src2closest(0,0), src2closest_inv(0,0);
 	t.x = mean_closest.x - ((mean_src.x * cos(r)) - (mean_src.y * sin(r)));
 	t.y = mean_closest.y - ((mean_src.x * sin(r)) + (mean_src.y * cos(r)));
 
-  // rt inplace
+  // apply rt inplace
 		for (unsigned i=0;i<src.size();++i) {
 			src[i].x = (src[i].x*cos(r)) - (src[i].y*sin(r)) + t.x;
 			src[i].y = (src[i].x*sin(r)) + (src[i].y*cos(r)) + t.y;
