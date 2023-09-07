@@ -1,3 +1,6 @@
+// work on opencv3.2 
+// code from https://blog.csdn.net/mightbxg/article/details/118338302
+
 #include <time.h>
 #include <random>
 
@@ -6,7 +9,6 @@
 using namespace cv;
 using namespace std;
 
-// https://blog.csdn.net/mightbxg/article/details/118338302
 int main() {
 // generate points
   constexpr size_t num = 100;
