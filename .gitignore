@@ -2,7 +2,7 @@ images
 test.py
 eigen/build
 eigen/eigen
-.vscode
+.vscode/settings.json
 build
 game-programming-patterns/sequencing_patterns/build
 game-programming-patterns/space_division/build
