@@ -6,6 +6,7 @@
 using namespace cv;
 using namespace std;
 
+// https://blog.csdn.net/mightbxg/article/details/118338302
 int main() {
 // generate points
   constexpr size_t num = 100;

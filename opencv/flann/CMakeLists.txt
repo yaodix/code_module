@@ -22,5 +22,5 @@ message(STATUS "EIGEN3_VERSION: ${EIGEN3_VERSION}")
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -Wall -O0 -Wfatal-errors -D_MWAITXINTRIN_H_INCLUDED")
 
-add_executable(knn 01_knn.cc)
-target_link_libraries(knn ${OpenCV_LIBS})
+add_executable(flann_demo 01_flann_demo.cc)
+target_link_libraries(flann_demo ${OpenCV_LIBS})
