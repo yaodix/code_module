@@ -1,5 +1,6 @@
 
 #include <vector>
+#include <numeric>
 
 #include <opencv2/opencv.hpp>
 
@@ -9,26 +10,28 @@ using namespace cv;
 
 
 // Finding closest points
-float flann_knn(Mat& m_destinations, Mat& m_object, vector<int>& ptpairs, vector<float>& dists /*= vector<float>()*/) {
+float flann_knn(std::vector<cv::Point2d>& ref_pts, std::vector<cv::Point2d>& to_reg_pts, vector<int>& ptpairs) {
     // find nearest neighbors using FLANN
-    cv::Mat m_indices(m_object.rows, 1, CV_32S);
-    cv::Mat m_dists(m_object.rows, 1, CV_32F);
-    Mat dest_32f; m_destinations.convertTo(dest_32f,CV_32FC2);
-    Mat obj_32f; m_object.convertTo(obj_32f,CV_32FC2);
-    assert(dest_32f.type() == CV_32F);
-    cv::flann::Index flann_index(dest_32f, cv::flann::KDTreeIndexParams(2));  // using 2 randomized kdtrees
-    flann_index.knnSearch(obj_32f, m_indices, m_dists, 1, cv::flann::SearchParams(64) );
-    int* indices_ptr = m_indices.ptr<int>(0);
-    //float* dists_ptr = m_dists.ptr<float>(0);
-    for (int i=0;i<m_indices.rows;++i) {
-        ptpairs.push_back(indices_ptr[i]);
-    }
-    dists.resize(m_dists.rows);
-    m_dists.copyTo(Mat(dists));
-    return cv::sum(m_dists)[0];
+  ptpairs.clear();
+  auto kdtree = flann::GenericIndex<flann::L2<double>>(Mat(ref_pts).reshape(1), cvflann::KDTreeIndexParams{2});
+
+  cv::Mat index(to_reg_pts.size(), 1, CV_32S);
+  cv::Mat dist_mat(to_reg_pts.size(), 1, CV_64F);
+ 
+  kdtree.knnSearch(cv::Mat(to_reg_pts).reshape(1), index, dist_mat, 1, cvflann::SearchParams{});
+
+  for (int i = 0; i < index.rows; ++i) {
+      ptpairs.push_back(index.at<int>(i, 0));
+  }
+
+  float dist = 0;
+  for (int i = 0; i < ptpairs.size(); ++i) {
+    dist += cv::norm(to_reg_pts[i] - ref_pts[ptpairs[i]]);
+  }
+  return dist;
 }
 
-// Compute transform,有错误
+// 有错误, Compute transform
 void findBestReansformSVD(Mat& _m, Mat& _d) {
     Mat m; _m.convertTo(m,CV_32F);
     Mat d; _d.convertTo(d,CV_32F);
@@ -64,8 +67,8 @@ void findBestReansformSVD(Mat& _m, Mat& _d) {
 }
 
 
-cv::Point2f getMean (std::vector<cv::Point2f> &pt) {
-	cv::Point2f mean(0,0);
+cv::Point2d getMean (std::vector<cv::Point2d> &pt) {
+	cv::Point2d mean(0,0);
 	for (unsigned i=0;i<pt.size();++i)
 		mean += pt[i];
 	mean /= (double)pt.size();
@@ -73,10 +76,10 @@ cv::Point2f getMean (std::vector<cv::Point2f> &pt) {
 }
 
 
-void findRT(std::vector<cv::Point2f>& src, std::vector<cv::Point2f>& closestPt) {
-	cv::Point2f mean_closest = getMean(closestPt);
-	cv::Point2f mean_src = getMean(src);
-cv::Point2f src2closest(0,0), src2closest_inv(0,0);
+void findRT(std::vector<cv::Point2d>& src, std::vector<cv::Point2d>& closestPt) {
+	cv::Point2d mean_closest = getMean(closestPt);
+	cv::Point2d mean_src = getMean(src);
+cv::Point2d src2closest(0,0), src2closest_inv(0,0);
 	for (unsigned i=0;i<src.size();++i) {
 		src2closest.x     += (src[i].x - mean_src.x)*(closestPt[i].x - mean_closest.x);
 		src2closest.y     += (src[i].y - mean_src.y)*(closestPt[i].y - mean_closest.y);
@@ -97,61 +100,75 @@ cv::Point2f src2closest(0,0), src2closest_inv(0,0);
 	double r = atan2(src2closest_inv.y, src2closest.x+src2closest.y)-
 		atan2(src2closest_inv.x, src2closest.x+src2closest.y);
   
-  cv::Point2f t;
+  cv::Point2d t;
 	t.x = mean_closest.x - ((mean_src.x * cos(r)) - (mean_src.y * sin(r)));
 	t.y = mean_closest.y - ((mean_src.x * sin(r)) + (mean_src.y * cos(r)));
 
   // apply rt inplace
-		for (unsigned i=0;i<src.size();++i) {
-			src[i].x = (src[i].x*cos(r)) - (src[i].y*sin(r)) + t.x;
-			src[i].y = (src[i].x*sin(r)) + (src[i].y*cos(r)) + t.y;
-    }
+  for (unsigned i = 0; i < src.size(); ++i) {
+    float a = ((src[i].x - mean_src.x) * cos(r)) - ((src[i].y - mean_src.y)*sin(r)) + mean_src.x + t.x ;
+    float b = ((src[i].x - mean_src.x) * sin(r)) + ((src[i].y - mean_src.y)*cos(r)) + mean_src.y + t.y ;
+    float a1 = ((src[i].x) * cos(r)) - ((src[i].y)*sin(r)) + t.x ;
+    float b1 = ((src[i].x) * sin(r)) + ((src[i].y)*cos(r)) + t.y ;
+    src[i].x = a1;  // a1,b1 more accurate
+    src[i].y = b1;
+  }
 }
 
+float FarestPt(std::vector<cv::Point2d>& pts) {
+  float max_dist_ = 0;
+  for (auto& pt : pts) {
+    for (auto& pt2 : pts) {
+      float dist = cv::norm(pt - pt2);
+      if (dist > max_dist_) {
+        max_dist_ = dist;
+      }
+    }
+  }
+  return max_dist_;
+}
 
 int main() {
   int i, num_pts;
-  cv::Mat image_base = cv::Mat::zeros(500, 500, CV_8UC3);
-  cv::Mat image = cv::Mat::zeros(500, 500, CV_8UC3);
-  std::vector<cv::Point2f> ref_points, new_points;
+  cv::Mat image_base = cv::Mat::zeros(500, 800, CV_8UC3);
+  cv::Mat image = cv::Mat::zeros(500, 800, CV_8UC3);
+  std::vector<cv::Point2d> ref_points, new_points;
 	num_pts = 200;
 
   double norm = 200;
-  float a = 0;
+  double a = 0;
 	for( i=0; i<num_pts; i++ ) {
-		float xx = (float)(norm/2.f)*cos(a);
-		float yy = (float)(norm)*sin(a);
-		float x = (float)(xx * cos(CV_PI/4) + yy *sin(CV_PI/4) +250);
-		float y = (float)(xx * -sin(CV_PI/4) + yy *cos(CV_PI/4)+250);
+		double xx = (double)(norm/2.f)*cos(a);
+		double yy = (double)(norm)*sin(a);
+		double x = (double)(xx * cos(CV_PI/4) + yy *sin(CV_PI/4) +550);
+		double y = (double)(xx * -sin(CV_PI/4) + yy *cos(CV_PI/4)+350);
 		ref_points.push_back(cvPoint2D32f(x,y));
 		cv::circle(image_base, cv::Point((int)x,(int)y),1,cv::Scalar(0,255,255),1);
-		a += (float)(2*CV_PI/num_pts);
+		a += (double)(2*CV_PI/num_pts);
 	}
 	a = 0.;
 	for( i=0; i< num_pts/5; i++ ) {
-		float xx = (float)((norm/1.9)*cos(a));
-		float yy = (float)((norm/1.1)*sin(a));
-		float x = (float)(xx * cos(-CV_PI/8) + yy *sin(-CV_PI/8) +150);
-		float y = (float)(xx * -sin(-CV_PI/8) + yy *cos(-CV_PI/8)+250);
+		double xx = (double)((norm/2.f)*cos(a));
+		double yy = (double)((norm/1.)*sin(a));
+		double x = (double)(xx * cos(-CV_PI/8) + yy *sin(-CV_PI/8) +150);
+		double y = (double)(xx * -sin(-CV_PI/8) + yy *cos(-CV_PI/8)+250);
 		new_points.push_back(cvPoint2D32f(x,y));
-		a += (float)(2*CV_PI/(float)(num_pts/5));
-		cv::circle(image_base,cv::Point((int)x,(int)y),1,cv::Scalar(255,255,0),1);
+		a += (double)(2*CV_PI/(double)(num_pts/5));
 	}
   // std::cout << "end " << std::endl;
-  cv::Mat destination(ref_points);
-  cv::Mat X(new_points);
   std::vector<int> pair;
-  std::vector<float> dists;
   double lastDist = 1e20;
   cv::Mat lastGood;
 
-  destination = destination.reshape(1);
-  X = X.reshape(1);
-   std::vector<cv::Point2f> x_pts;
-   x_pts.assign(new_points.begin(), new_points.end());
+   std::vector<cv::Point2d> x_pts;
+   x_pts = new_points;
+
+  for (auto pt : x_pts)
+		cv::circle(image_base, pt, 1,cv::Scalar(255,255,0),1);
+
   while(true) {
-      pair.clear(); dists.clear();
-      double dist = flann_knn(destination, X, pair, dists);
+      pair.clear();
+      double dist = flann_knn(ref_points, x_pts, pair);
       image_base.copyTo(image);
       
       for (int i = 0; i < pair.size(); i++) {
@@ -159,34 +176,17 @@ int main() {
         cv::line(image, ref_points[pair[i]], x_pts[i], cv::Scalar(0,125,0));
       }
       if(lastDist <= dist) {
-          X = lastGood;
           cv::imwrite("./res.png", image);
           break;  //converged?
       }
       lastDist = dist;
-      X.copyTo(lastGood);
+
       cout << "distance: " << dist << endl;
-      Mat X_bar(X.size(),X.type());
-      for(int i=0;i<X.rows;i++) {
-          Point p = destination.at<Point>(pair[i], 0);
-          X_bar.at<Point>(i,0) = p;
-      }
-      // ShowQuery(destination,X,X_bar);
-      // X = X.reshape(2);
-      // X_bar = X_bar.reshape(2);
-      // findBestReansformSVD(X,X_bar);
-      x_pts.clear();
-      for (int i = 0; i < X.rows; i++) {
-        x_pts.emplace_back(X.at<float>(i,0), X.at<float>(i,1));
-      }    
-      std::vector<cv::Point2f> x_close_pts;
-      for (int i = 0; i < X_bar.rows; i++) {
-        x_close_pts.emplace_back(X_bar.at<float>(i,0), X_bar.at<float>(i,1));
+      std::vector<cv::Point2d> x_close_pts;
+      for(int i = 0; i < pair.size(); i++) {
+          x_close_pts.push_back(ref_points[pair[i]]);
       }
       findRT(x_pts, x_close_pts);
-      image_base.copyTo(image);
-      X = Mat(x_pts);
-      X = X.reshape(1); // back to 1-channel
   }
   return 0;
 }
