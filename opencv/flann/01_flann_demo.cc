@@ -38,7 +38,7 @@ int main() {
   constexpr int K = 4;
   vector<int> indices(K);
   vector<float> dists(K);
-  kdtree.knnSearch({ query.x, query.y }, indices, dists, K, cvflann::SearchParams {});
+  kdtree.knnSearch({ query.x, query.y }, indices, dists, K, cvflann::SearchParams());
   cout << " nearest " << K << ": " << Mat(indices).t() << endl;
   {
       Mat result = image.clone();
@@ -54,7 +54,7 @@ int main() {
   constexpr size_t max_num = 10;
   indices.resize(max_num, -1);
   dists.resize(max_num);
-  kdtree.radiusSearch({ query.x, query.y }, indices, dists, radius * radius, cvflann::SearchParams {});  // L2距离，radius参数是半径的平方
+  kdtree.radiusSearch({ query.x, query.y }, indices, dists, radius * radius, cvflann::SearchParams());  // L2距离，radius参数是半径的平方
   cout << "in radius " << radius << ": " << Mat(indices).t() << endl;
   {
       Mat result = image.clone();
