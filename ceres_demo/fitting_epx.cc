@@ -57,7 +57,7 @@ int main()
   options.linear_solver_type=ceres::DENSE_QR;
   options.minimizer_progress_to_stdout=true;
   ceres::Solver::Summary summary;
-  ceres::Solve(options,&problem,&summary);
+  ceres::Solve(options, &problem, &summary);
   cout<<"a= "<<abc[0]<<endl;
   cout<<"b= "<<abc[1]<<endl;
   cout<<"c= "<<abc[2]<<endl;

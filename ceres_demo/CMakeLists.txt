@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 3.10.0)
 project(HELLO)
 
-set(CMAKE_BUILD_TYPE "Debug" CACHE STRING "set build type to debug")
-set(CMAKE_CXX_FLAGS "-std=c++11")
+# set(CMAKE_BUILD_TYPE "Debug" CACHE STRING "set build type to debug")
+set(CMAKE_CXX_STANDARD 14)
 # set(CMAKE_BUILD_TYPE "Debug")
 # SET(CMAKE_CXX_FLAGS_DEBUG "-O0 -Wall") 
 
@@ -22,7 +22,7 @@ include_directories(${EIGEN3_INCLUDE_DIRS})
 # set(Ceres_LIBS_DIR /usr/local/ceres/lib)
 
 add_subdirectory(ceres)
-include_directories(${PROJECT_SOURCE_DIR}/ceres/include)
+include_directories(/usr/local/ceres//include)
 
 
 SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR})
