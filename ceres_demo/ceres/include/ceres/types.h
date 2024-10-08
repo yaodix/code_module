@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2019 Google Inc. All rights reserved.
+// Copyright 2023 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -40,7 +40,7 @@
 #include <string>
 
 #include "ceres/internal/disable_warnings.h"
-#include "ceres/internal/port.h"
+#include "ceres/internal/export.h"
 
 namespace ceres {
 
@@ -50,7 +50,7 @@ namespace ceres {
 // delete on it upon completion.
 enum Ownership {
   DO_NOT_TAKE_OWNERSHIP,
-  TAKE_OWNERSHIP
+  TAKE_OWNERSHIP,
 };
 
 // TODO(keir): Considerably expand the explanations of each solver type.
@@ -67,8 +67,7 @@ enum LinearSolverType {
   // Eigen.
   DENSE_QR,
 
-  // Solve the normal equations using a sparse cholesky solver; requires
-  // SuiteSparse or CXSparse.
+  // Solve the normal equations using a sparse cholesky solver;
   SPARSE_NORMAL_CHOLESKY,
 
   // Specialized solvers, specific to problems with a generalized
@@ -98,13 +97,17 @@ enum PreconditionerType {
   // Block diagonal of the Gauss-Newton Hessian.
   JACOBI,
 
-  // Note: The following three preconditioners can only be used with
+  // Note: The following four preconditioners can only be used with
   // the ITERATIVE_SCHUR solver. They are well suited for Structure
   // from Motion problems.
 
   // Block diagonal of the Schur complement. This preconditioner may
   // only be used with the ITERATIVE_SCHUR solver.
   SCHUR_JACOBI,
+
+  // Use power series expansion to approximate the inversion of Schur complement
+  // as a preconditioner.
+  SCHUR_POWER_SERIES_EXPANSION,
 
   // Visibility clustering based preconditioners.
   //
@@ -134,7 +137,7 @@ enum PreconditionerType {
   // well the matrix Q approximates J'J, or how well the chosen
   // residual blocks approximate the non-linear least squares
   // problem.
-  SUBSET,
+  SUBSET
 };
 
 enum VisibilityClusteringType {
@@ -165,11 +168,6 @@ enum SparseLinearAlgebraLibraryType {
   // minimum degree ordering.
   SUITE_SPARSE,
 
-  // A lightweight replacement for SuiteSparse, which does not require
-  // a LAPACK/BLAS implementation. Consequently, its performance is
-  // also a bit lower than SuiteSparse.
-  CX_SPARSE,
-
   // Eigen's sparse linear algebra routines. In particular Ceres uses
   // the Simplicial LDLT routines.
   EIGEN_SPARSE,
@@ -177,27 +175,55 @@ enum SparseLinearAlgebraLibraryType {
   // Apple's Accelerate framework sparse linear algebra routines.
   ACCELERATE_SPARSE,
 
+  // Nvidia's cuSPARSE library.
+  CUDA_SPARSE,
+
   // No sparse linear solver should be used.  This does not necessarily
   // imply that Ceres was built without any sparse library, although that
   // is the likely use case, merely that one should not be used.
   NO_SPARSE
 };
 
+// The order in which variables are eliminated in a linear solver
+// can have a significant of impact on the efficiency and accuracy
+// of the method. e.g., when doing sparse Cholesky factorization,
+// there are matrices for which a good ordering will give a
+// Cholesky factor with O(n) storage, where as a bad ordering will
+// result in an completely dense factor.
+//
+// So sparse direct solvers like SPARSE_NORMAL_CHOLESKY and
+// SPARSE_SCHUR and preconditioners like SUBSET, CLUSTER_JACOBI &
+// CLUSTER_TRIDIAGONAL use a fill reducing ordering of the columns and
+// rows of the matrix being factorized before actually the numeric
+// factorization.
+//
+// This enum controls the class of algorithm used to compute this
+// fill reducing ordering. There is no single algorithm that works
+// on all matrices, so determining which algorithm works better is a
+// matter of empirical experimentation.
+enum LinearSolverOrderingType {
+  // Approximate Minimum Degree.
+  AMD,
+  // Nested Dissection.
+  NESDIS
+};
+
 enum DenseLinearAlgebraLibraryType {
   EIGEN,
-  LAPACK
+  LAPACK,
+  CUDA,
 };
 
 // Logging options
 // The options get progressively noisier.
 enum LoggingType {
   SILENT,
-  PER_MINIMIZER_ITERATION
+  PER_MINIMIZER_ITERATION,
 };
 
 enum MinimizerType {
   LINE_SEARCH,
-  TRUST_REGION
+  TRUST_REGION,
 };
 
 enum LineSearchDirectionType {
@@ -412,7 +438,7 @@ enum DumpFormatType {
 // specified for the number of residuals. If specified, then the
 // number of residuas for that cost function can vary at runtime.
 enum DimensionType {
-  DYNAMIC = -1
+  DYNAMIC = -1,
 };
 
 // The differentiation method used to compute numerical derivatives in
@@ -433,7 +459,7 @@ enum NumericDiffMethodType {
 enum LineSearchInterpolationType {
   BISECTION,
   QUADRATIC,
-  CUBIC
+  CUBIC,
 };
 
 enum CovarianceAlgorithmType {
@@ -448,8 +474,7 @@ enum CovarianceAlgorithmType {
 // did not write to that memory location.
 const double kImpossibleValue = 1e302;
 
-CERES_EXPORT const char* LinearSolverTypeToString(
-    LinearSolverType type);
+CERES_EXPORT const char* LinearSolverTypeToString(LinearSolverType type);
 CERES_EXPORT bool StringToLinearSolverType(std::string value,
                                            LinearSolverType* type);
 
@@ -459,25 +484,28 @@ CERES_EXPORT bool StringToPreconditionerType(std::string value,
 
 CERES_EXPORT const char* VisibilityClusteringTypeToString(
     VisibilityClusteringType type);
-CERES_EXPORT bool StringToVisibilityClusteringType(std::string value,
-                                      VisibilityClusteringType* type);
+CERES_EXPORT bool StringToVisibilityClusteringType(
+    std::string value, VisibilityClusteringType* type);
 
 CERES_EXPORT const char* SparseLinearAlgebraLibraryTypeToString(
     SparseLinearAlgebraLibraryType type);
 CERES_EXPORT bool StringToSparseLinearAlgebraLibraryType(
-    std::string value,
-    SparseLinearAlgebraLibraryType* type);
+    std::string value, SparseLinearAlgebraLibraryType* type);
+
+CERES_EXPORT const char* LinearSolverOrderingTypeToString(
+    LinearSolverOrderingType type);
+CERES_EXPORT bool StringToLinearSolverOrderingType(
+    std::string value, LinearSolverOrderingType* type);
 
 CERES_EXPORT const char* DenseLinearAlgebraLibraryTypeToString(
     DenseLinearAlgebraLibraryType type);
 CERES_EXPORT bool StringToDenseLinearAlgebraLibraryType(
-    std::string value,
-    DenseLinearAlgebraLibraryType* type);
+    std::string value, DenseLinearAlgebraLibraryType* type);
 
 CERES_EXPORT const char* TrustRegionStrategyTypeToString(
     TrustRegionStrategyType type);
-CERES_EXPORT bool StringToTrustRegionStrategyType(std::string value,
-                                     TrustRegionStrategyType* type);
+CERES_EXPORT bool StringToTrustRegionStrategyType(
+    std::string value, TrustRegionStrategyType* type);
 
 CERES_EXPORT const char* DoglegTypeToString(DoglegType type);
 CERES_EXPORT bool StringToDoglegType(std::string value, DoglegType* type);
@@ -487,41 +515,39 @@ CERES_EXPORT bool StringToMinimizerType(std::string value, MinimizerType* type);
 
 CERES_EXPORT const char* LineSearchDirectionTypeToString(
     LineSearchDirectionType type);
-CERES_EXPORT bool StringToLineSearchDirectionType(std::string value,
-                                     LineSearchDirectionType* type);
+CERES_EXPORT bool StringToLineSearchDirectionType(
+    std::string value, LineSearchDirectionType* type);
 
 CERES_EXPORT const char* LineSearchTypeToString(LineSearchType type);
-CERES_EXPORT bool StringToLineSearchType(std::string value, LineSearchType* type);
+CERES_EXPORT bool StringToLineSearchType(std::string value,
+                                         LineSearchType* type);
 
 CERES_EXPORT const char* NonlinearConjugateGradientTypeToString(
     NonlinearConjugateGradientType type);
 CERES_EXPORT bool StringToNonlinearConjugateGradientType(
-    std::string value,
-    NonlinearConjugateGradientType* type);
+    std::string value, NonlinearConjugateGradientType* type);
 
 CERES_EXPORT const char* LineSearchInterpolationTypeToString(
     LineSearchInterpolationType type);
 CERES_EXPORT bool StringToLineSearchInterpolationType(
-    std::string value,
-    LineSearchInterpolationType* type);
+    std::string value, LineSearchInterpolationType* type);
 
 CERES_EXPORT const char* CovarianceAlgorithmTypeToString(
     CovarianceAlgorithmType type);
 CERES_EXPORT bool StringToCovarianceAlgorithmType(
-    std::string value,
-    CovarianceAlgorithmType* type);
+    std::string value, CovarianceAlgorithmType* type);
 
 CERES_EXPORT const char* NumericDiffMethodTypeToString(
     NumericDiffMethodType type);
-CERES_EXPORT bool StringToNumericDiffMethodType(
-    std::string value,
-    NumericDiffMethodType* type);
+CERES_EXPORT bool StringToNumericDiffMethodType(std::string value,
+                                                NumericDiffMethodType* type);
 
 CERES_EXPORT const char* LoggingTypeToString(LoggingType type);
 CERES_EXPORT bool StringtoLoggingType(std::string value, LoggingType* type);
 
 CERES_EXPORT const char* DumpFormatTypeToString(DumpFormatType type);
-CERES_EXPORT bool StringtoDumpFormatType(std::string value, DumpFormatType* type);
+CERES_EXPORT bool StringtoDumpFormatType(std::string value,
+                                         DumpFormatType* type);
 CERES_EXPORT bool StringtoDumpFormatType(std::string value, LoggingType* type);
 
 CERES_EXPORT const char* TerminationTypeToString(TerminationType type);

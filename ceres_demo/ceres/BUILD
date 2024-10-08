@@ -1,5 +1,5 @@
 # Ceres Solver - A fast non-linear least squares minimizer
-# Copyright 2018 Google Inc. All rights reserved.
+# Copyright 2023 Google Inc. All rights reserved.
 # http://ceres-solver.org/
 #
 # Redistribution and use in source and binary forms, with or without
@@ -72,7 +72,7 @@ cc_library(
 CERES_TESTS = [
     "array_utils",
     "autodiff_cost_function",
-    "autodiff_local_parameterization",
+    "autodiff_manifold",
     "autodiff",
     "block_jacobi_preconditioner",
     "block_random_access_dense_matrix",
@@ -90,6 +90,7 @@ CERES_TESTS = [
     "cost_function_to_functor",
     "covariance",
     "cubic_interpolation",
+    "dense_cholesky",
     "dense_linear_solver",
     "dense_sparse_matrix",
     "detect_structure",
@@ -118,7 +119,6 @@ CERES_TESTS = [
     "levenberg_marquardt_strategy",
     "line_search_minimizer",
     "line_search_preprocessor",
-    "local_parameterization",
     "loss_function",
     "minimizer",
     "normal_prior",
@@ -164,14 +164,13 @@ TEST_COPTS = [
     # trigger incorrectly on parts of rotation_test. For now, disable them,
     # but in the future disable these warnings only for rotation_test.
     # TODO(keir): When the tests are macro-ified, apply these selectively.
-    "-Wno-nonnull-compare",
     "-Wno-address",
 ]
 
 TEST_DEPS = [
     "//:ceres",
     "//:test_util",
-    "@com_github_eigen_eigen//:eigen",
+    "@com_gitlab_libeigen_eigen//:eigen",
     "@com_github_gflags_gflags//:gflags",
 ]
 
@@ -192,7 +191,7 @@ TEST_DEPS = [
 # dependency that we'd prefer to avoid.
 [cc_test(
     name = test_filename.split("/")[-1][:-3],  # Remove .cc.
-    timeout = "moderate",
+    timeout = "long",
     srcs = [test_filename],
     copts = TEST_COPTS,
 
@@ -210,7 +209,6 @@ TEST_DEPS = [
     copts = TEST_COPTS,
     deps = TEST_DEPS + ["@com_github_google_benchmark//:benchmark"],
 ) for benchmark_name in [
-    "autodiff_cost_function_benchmark",
     "small_blas_gemm_benchmark",
     "small_blas_gemv_benchmark",
 ]]

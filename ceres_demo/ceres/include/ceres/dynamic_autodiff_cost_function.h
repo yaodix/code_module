@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2019 Google Inc. All rights reserved.
+// Copyright 2023 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -40,6 +40,7 @@
 #include "ceres/dynamic_cost_function.h"
 #include "ceres/internal/fixed_array.h"
 #include "ceres/jet.h"
+#include "ceres/types.h"
 #include "glog/logging.h"
 
 namespace ceres {
@@ -76,12 +77,26 @@ namespace ceres {
 // pass. There is a tradeoff with the size of the passes; you may want
 // to experiment with the stride.
 template <typename CostFunctor, int Stride = 4>
-class DynamicAutoDiffCostFunction : public DynamicCostFunction {
+class DynamicAutoDiffCostFunction final : public DynamicCostFunction {
  public:
-  explicit DynamicAutoDiffCostFunction(CostFunctor* functor)
-      : functor_(functor) {}
+  // Takes ownership by default.
+  explicit DynamicAutoDiffCostFunction(CostFunctor* functor,
+                                       Ownership ownership = TAKE_OWNERSHIP)
+      : functor_(functor), ownership_(ownership) {}
 
-  virtual ~DynamicAutoDiffCostFunction() {}
+  DynamicAutoDiffCostFunction(DynamicAutoDiffCostFunction&& other)
+      : functor_(std::move(other.functor_)), ownership_(other.ownership_) {}
+
+  ~DynamicAutoDiffCostFunction() override {
+    // Manually release pointer if configured to not take ownership
+    // rather than deleting only if ownership is taken.  This is to
+    // stay maximally compatible to old user code which may have
+    // forgotten to implement a virtual destructor, from when the
+    // AutoDiffCostFunction always took ownership.
+    if (ownership_ == DO_NOT_TAKE_OWNERSHIP) {
+      functor_.release();
+    }
+  }
 
   bool Evaluate(double const* const* parameters,
                 double* residuals,
@@ -90,7 +105,7 @@ class DynamicAutoDiffCostFunction : public DynamicCostFunction {
         << "You must call DynamicAutoDiffCostFunction::SetNumResiduals() "
         << "before DynamicAutoDiffCostFunction::Evaluate().";
 
-    if (jacobians == NULL) {
+    if (jacobians == nullptr) {
       return (*functor_)(parameters, residuals);
     }
 
@@ -135,7 +150,7 @@ class DynamicAutoDiffCostFunction : public DynamicCostFunction {
       jet_parameters[i] = &input_jets[parameter_cursor];
 
       const int parameter_block_size = parameter_block_sizes()[i];
-      if (jacobians[i] != NULL) {
+      if (jacobians[i] != nullptr) {
         if (!in_derivative_section) {
           start_derivative_section.push_back(parameter_cursor);
           in_derivative_section = true;
@@ -151,6 +166,9 @@ class DynamicAutoDiffCostFunction : public DynamicCostFunction {
       }
     }
 
+    if (num_active_parameters == 0) {
+      return (*functor_)(parameters, residuals);
+    }
     // When `num_active_parameters % Stride != 0` then it can be the case
     // that `active_parameter_count < Stride` while parameter_cursor is less
     // than the total number of parameters and with no remaining non-constant
@@ -191,7 +209,7 @@ class DynamicAutoDiffCostFunction : public DynamicCostFunction {
               parameter_cursor >=
                   (start_derivative_section[current_derivative_section] +
                    current_derivative_section_cursor)) {
-            if (jacobians[i] != NULL) {
+            if (jacobians[i] != nullptr) {
               input_jets[parameter_cursor].v[active_parameter_count] = 1.0;
               ++active_parameter_count;
               ++current_derivative_section_cursor;
@@ -220,7 +238,7 @@ class DynamicAutoDiffCostFunction : public DynamicCostFunction {
               parameter_cursor >=
                   (start_derivative_section[current_derivative_section] +
                    current_derivative_section_cursor)) {
-            if (jacobians[i] != NULL) {
+            if (jacobians[i] != nullptr) {
               for (int k = 0; k < num_residuals(); ++k) {
                 jacobians[i][k * parameter_block_sizes()[i] + j] =
                     output_jets[k].v[active_parameter_count];
@@ -246,9 +264,22 @@ class DynamicAutoDiffCostFunction : public DynamicCostFunction {
     return true;
   }
 
+  const CostFunctor& functor() const { return *functor_; }
+
  private:
   std::unique_ptr<CostFunctor> functor_;
+  Ownership ownership_;
 };
+
+// Deduction guide that allows the user to avoid explicitly specifying the
+// template parameter of DynamicAutoDiffCostFunction. The class can instead be
+// instantiated as follows:
+//
+//   new DynamicAutoDiffCostFunction{new MyCostFunctor{}};
+//
+template <typename CostFunctor>
+DynamicAutoDiffCostFunction(CostFunctor* functor, Ownership ownership)
+    -> DynamicAutoDiffCostFunction<CostFunctor>;
 
 }  // namespace ceres
 

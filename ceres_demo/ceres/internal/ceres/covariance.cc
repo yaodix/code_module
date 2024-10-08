@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2015 Google Inc. All rights reserved.
+// Copyright 2023 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -32,33 +32,29 @@
 
 #include <utility>
 #include <vector>
+
 #include "ceres/covariance_impl.h"
 #include "ceres/problem.h"
 #include "ceres/problem_impl.h"
 
 namespace ceres {
 
-using std::make_pair;
-using std::pair;
-using std::vector;
-
 Covariance::Covariance(const Covariance::Options& options) {
-  impl_.reset(new internal::CovarianceImpl(options));
+  impl_ = std::make_unique<internal::CovarianceImpl>(options);
 }
 
-Covariance::~Covariance() {
-}
-
-bool Covariance::Compute(
-    const vector<pair<const double*, const double*>>& covariance_blocks,
-    Problem* problem) {
-  return impl_->Compute(covariance_blocks, problem->impl_.get());
-}
+Covariance::~Covariance() = default;
 
 bool Covariance::Compute(
-    const vector<const double*>& parameter_blocks,
+    const std::vector<std::pair<const double*, const double*>>&
+        covariance_blocks,
     Problem* problem) {
-  return impl_->Compute(parameter_blocks, problem->impl_.get());
+  return impl_->Compute(covariance_blocks, problem->mutable_impl());
+}
+
+bool Covariance::Compute(const std::vector<const double*>& parameter_blocks,
+                         Problem* problem) {
+  return impl_->Compute(parameter_blocks, problem->mutable_impl());
 }
 
 bool Covariance::GetCovarianceBlock(const double* parameter_block1,
@@ -81,7 +77,7 @@ bool Covariance::GetCovarianceBlockInTangentSpace(
 }
 
 bool Covariance::GetCovarianceMatrix(
-    const vector<const double*>& parameter_blocks,
+    const std::vector<const double*>& parameter_blocks,
     double* covariance_matrix) const {
   return impl_->GetCovarianceMatrixInTangentOrAmbientSpace(parameter_blocks,
                                                            true,  // ambient
@@ -89,8 +85,8 @@ bool Covariance::GetCovarianceMatrix(
 }
 
 bool Covariance::GetCovarianceMatrixInTangentSpace(
-    const std::vector<const double *>& parameter_blocks,
-    double *covariance_matrix) const {
+    const std::vector<const double*>& parameter_blocks,
+    double* covariance_matrix) const {
   return impl_->GetCovarianceMatrixInTangentOrAmbientSpace(parameter_blocks,
                                                            false,  // tangent
                                                            covariance_matrix);

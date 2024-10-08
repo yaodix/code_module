@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2019 Google Inc. All rights reserved.
+// Copyright 2023 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -32,32 +32,31 @@
 
 #include <memory>
 
-#include "gtest/gtest.h"
-#include "ceres/cost_function.h"
 #include "ceres/array_utils.h"
+#include "ceres/cost_function.h"
+#include "gtest/gtest.h"
 
-namespace ceres {
-namespace internal {
+namespace ceres::internal {
 
 class BinaryScalarCost {
  public:
-  explicit BinaryScalarCost(double a): a_(a) {}
+  explicit BinaryScalarCost(double a) : a_(a) {}
   template <typename T>
-  bool operator()(const T* const x, const T* const y,
-                  T* cost) const {
-    cost[0] = x[0] * y[0] + x[1] * y[1]  - T(a_);
+  bool operator()(const T* const x, const T* const y, T* cost) const {
+    cost[0] = x[0] * y[0] + x[1] * y[1] - T(a_);
     return true;
   }
+
  private:
   double a_;
 };
 
 TEST(AutodiffCostFunction, BilinearDifferentiationTest) {
-  CostFunction* cost_function  =
-    new AutoDiffCostFunction<BinaryScalarCost, 1, 2, 2>(
-        new BinaryScalarCost(1.0));
+  CostFunction* cost_function =
+      new AutoDiffCostFunction<BinaryScalarCost, 1, 2, 2>(
+          new BinaryScalarCost(1.0));
 
-  double** parameters = new double*[2];
+  auto** parameters = new double*[2];
   parameters[0] = new double[2];
   parameters[1] = new double[2];
 
@@ -67,7 +66,7 @@ TEST(AutodiffCostFunction, BilinearDifferentiationTest) {
   parameters[1][0] = 3;
   parameters[1][1] = 4;
 
-  double** jacobians = new double*[2];
+  auto** jacobians = new double*[2];
   jacobians[0] = new double[2];
   jacobians[1] = new double[2];
 
@@ -112,13 +111,22 @@ struct TenParameterCost {
 };
 
 TEST(AutodiffCostFunction, ManyParameterAutodiffInstantiates) {
-  CostFunction* cost_function  =
-      new AutoDiffCostFunction<
-          TenParameterCost, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1>(
-              new TenParameterCost);
+  CostFunction* cost_function =
+      new AutoDiffCostFunction<TenParameterCost,
+                               1,
+                               1,
+                               1,
+                               1,
+                               1,
+                               1,
+                               1,
+                               1,
+                               1,
+                               1,
+                               1>(new TenParameterCost);
 
-  double** parameters = new double*[10];
-  double** jacobians = new double*[10];
+  auto** parameters = new double*[10];
+  auto** jacobians = new double*[10];
   for (int i = 0; i < 10; ++i) {
     parameters[i] = new double[1];
     parameters[i][0] = i;
@@ -170,5 +178,4 @@ TEST(AutoDiffCostFunction, PartiallyFilledResidualShouldFailEvaluation) {
   EXPECT_FALSE(IsArrayValid(2, residuals));
 }
 
-}  // namespace internal
-}  // namespace ceres
+}  // namespace ceres::internal

@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2015 Google Inc. All rights reserved.
+// Copyright 2023 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -28,14 +28,16 @@
 //
 // Author: sameeragarwal@google.com (Sameer Agarwal)
 
+#include "ceres/trust_region_preprocessor.h"
+
 #include <array>
 #include <map>
 
+#include "ceres/internal/config.h"
 #include "ceres/ordered_groups.h"
 #include "ceres/problem_impl.h"
 #include "ceres/sized_cost_function.h"
 #include "ceres/solver.h"
-#include "ceres/trust_region_preprocessor.h"
 #include "gtest/gtest.h"
 
 namespace ceres {
@@ -71,7 +73,7 @@ TEST(TrustRegionPreprocessor, ParameterBlockBoundsAreInvalid) {
   EXPECT_FALSE(preprocessor.Preprocess(options, &problem, &pp));
 }
 
-TEST(TrustRegionPreprocessor, ParamterBlockIsInfeasible) {
+TEST(TrustRegionPreprocessor, ParameterBlockIsInfeasible) {
   ProblemImpl problem;
   double x = 3.0;
   problem.AddParameterBlock(&x, 1);
@@ -88,7 +90,7 @@ class FailingCostFunction : public SizedCostFunction<1, 1> {
  public:
   bool Evaluate(double const* const* parameters,
                 double* residuals,
-                double** jacobians) const {
+                double** jacobians) const override {
     return false;
   }
 };
@@ -119,7 +121,7 @@ class DummyCostFunction : public SizedCostFunction<kNumResiduals, Ns...> {
  public:
   bool Evaluate(double const* const* parameters,
                 double* residuals,
-                double** jacobians) const {
+                double** jacobians) const override {
     for (int i = 0; i < kNumResiduals; ++i) {
       residuals[i] = kNumResiduals * kNumResiduals + i;
     }
@@ -147,8 +149,10 @@ class LinearSolverAndEvaluatorCreationTest : public ::testing::Test {
     x_ = 1.0;
     y_ = 1.0;
     z_ = 1.0;
-    problem_.AddResidualBlock(new DummyCostFunction<1, 1, 1>, nullptr, &x_, &y_);
-    problem_.AddResidualBlock(new DummyCostFunction<1, 1, 1>, nullptr, &y_, &z_);
+    problem_.AddResidualBlock(
+        new DummyCostFunction<1, 1, 1>, nullptr, &x_, &y_);
+    problem_.AddResidualBlock(
+        new DummyCostFunction<1, 1, 1>, nullptr, &y_, &z_);
   }
 
   void PreprocessForGivenLinearSolverAndVerify(
@@ -222,7 +226,7 @@ TEST_F(LinearSolverAndEvaluatorCreationTest, MinimizerIsAwareOfBounds) {
 TEST_F(LinearSolverAndEvaluatorCreationTest, SchurTypeSolverWithBadOrdering) {
   Solver::Options options;
   options.linear_solver_type = DENSE_SCHUR;
-  options.linear_solver_ordering.reset(new ParameterBlockOrdering);
+  options.linear_solver_ordering = std::make_shared<ParameterBlockOrdering>();
   options.linear_solver_ordering->AddElementToGroup(&x_, 0);
   options.linear_solver_ordering->AddElementToGroup(&y_, 0);
   options.linear_solver_ordering->AddElementToGroup(&z_, 1);
@@ -235,7 +239,7 @@ TEST_F(LinearSolverAndEvaluatorCreationTest, SchurTypeSolverWithBadOrdering) {
 TEST_F(LinearSolverAndEvaluatorCreationTest, SchurTypeSolverWithGoodOrdering) {
   Solver::Options options;
   options.linear_solver_type = DENSE_SCHUR;
-  options.linear_solver_ordering.reset(new ParameterBlockOrdering);
+  options.linear_solver_ordering = std::make_shared<ParameterBlockOrdering>();
   options.linear_solver_ordering->AddElementToGroup(&x_, 0);
   options.linear_solver_ordering->AddElementToGroup(&z_, 0);
   options.linear_solver_ordering->AddElementToGroup(&y_, 1);
@@ -257,7 +261,7 @@ TEST_F(LinearSolverAndEvaluatorCreationTest,
 
   Solver::Options options;
   options.linear_solver_type = DENSE_SCHUR;
-  options.linear_solver_ordering.reset(new ParameterBlockOrdering);
+  options.linear_solver_ordering = std::make_shared<ParameterBlockOrdering>();
   options.linear_solver_ordering->AddElementToGroup(&x_, 0);
   options.linear_solver_ordering->AddElementToGroup(&z_, 0);
   options.linear_solver_ordering->AddElementToGroup(&y_, 1);
@@ -278,7 +282,7 @@ TEST_F(LinearSolverAndEvaluatorCreationTest,
 
   Solver::Options options;
   options.linear_solver_type = DENSE_SCHUR;
-  options.linear_solver_ordering.reset(new ParameterBlockOrdering);
+  options.linear_solver_ordering = std::make_shared<ParameterBlockOrdering>();
   options.linear_solver_ordering->AddElementToGroup(&x_, 0);
   options.linear_solver_ordering->AddElementToGroup(&z_, 0);
   options.linear_solver_ordering->AddElementToGroup(&y_, 1);
@@ -322,11 +326,10 @@ TEST_F(LinearSolverAndEvaluatorCreationTest,
   EXPECT_TRUE(pp.inner_iteration_minimizer.get() != nullptr);
 }
 
-TEST_F(LinearSolverAndEvaluatorCreationTest,
-       InvalidInnerIterationsOrdering) {
+TEST_F(LinearSolverAndEvaluatorCreationTest, InvalidInnerIterationsOrdering) {
   Solver::Options options;
   options.use_inner_iterations = true;
-  options.inner_iteration_ordering.reset(new ParameterBlockOrdering);
+  options.inner_iteration_ordering = std::make_shared<ParameterBlockOrdering>();
   options.inner_iteration_ordering->AddElementToGroup(&x_, 0);
   options.inner_iteration_ordering->AddElementToGroup(&z_, 0);
   options.inner_iteration_ordering->AddElementToGroup(&y_, 0);
@@ -339,7 +342,7 @@ TEST_F(LinearSolverAndEvaluatorCreationTest,
 TEST_F(LinearSolverAndEvaluatorCreationTest, ValidInnerIterationsOrdering) {
   Solver::Options options;
   options.use_inner_iterations = true;
-  options.inner_iteration_ordering.reset(new ParameterBlockOrdering);
+  options.inner_iteration_ordering = std::make_shared<ParameterBlockOrdering>();
   options.inner_iteration_ordering->AddElementToGroup(&x_, 0);
   options.inner_iteration_ordering->AddElementToGroup(&z_, 0);
   options.inner_iteration_ordering->AddElementToGroup(&y_, 1);

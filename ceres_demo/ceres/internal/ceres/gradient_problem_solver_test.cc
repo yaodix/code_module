@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2015 Google Inc. All rights reserved.
+// Copyright 2023 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -28,19 +28,16 @@
 //
 // Author: strandmark@google.com (Petter Strandmark)
 
-#include "ceres/gradient_problem.h"
 #include "ceres/gradient_problem_solver.h"
 
+#include "ceres/gradient_problem.h"
 #include "gtest/gtest.h"
 
-namespace ceres {
-namespace internal {
+namespace ceres::internal {
 
 // Rosenbrock function; see http://en.wikipedia.org/wiki/Rosenbrock_function .
 class Rosenbrock : public ceres::FirstOrderFunction {
  public:
-  virtual ~Rosenbrock() {}
-
   bool Evaluate(const double* parameters,
                 double* cost,
                 double* gradient) const final {
@@ -48,7 +45,7 @@ class Rosenbrock : public ceres::FirstOrderFunction {
     const double y = parameters[1];
 
     cost[0] = (1.0 - x) * (1.0 - x) + 100.0 * (y - x * x) * (y - x * x);
-    if (gradient != NULL) {
+    if (gradient != nullptr) {
       gradient[0] = -2.0 * (1.0 - x) - 200.0 * (y - x * x) * 2.0 * x;
       gradient[1] = 200.0 * (y - x * x);
     }
@@ -73,13 +70,12 @@ TEST(GradientProblemSolver, SolvesRosenbrockWithDefaultOptions) {
 }
 
 class QuadraticFunction : public ceres::FirstOrderFunction {
-  virtual ~QuadraticFunction() {}
   bool Evaluate(const double* parameters,
                 double* cost,
                 double* gradient) const final {
     const double x = parameters[0];
     *cost = 0.5 * (5.0 - x) * (5.0 - x);
-    if (gradient != NULL) {
+    if (gradient != nullptr) {
       gradient[0] = x - 5.0;
     }
 
@@ -89,17 +85,15 @@ class QuadraticFunction : public ceres::FirstOrderFunction {
 };
 
 struct RememberingCallback : public IterationCallback {
-  explicit RememberingCallback(double *x) : calls(0), x(x) {}
-  virtual ~RememberingCallback() {}
+  explicit RememberingCallback(double* x) : calls(0), x(x) {}
   CallbackReturnType operator()(const IterationSummary& summary) final {
     x_values.push_back(*x);
     return SOLVER_CONTINUE;
   }
   int calls;
-  double *x;
+  double* x;
   std::vector<double> x_values;
 };
-
 
 TEST(Solver, UpdateStateEveryIterationOption) {
   double x = 50.0;
@@ -117,8 +111,8 @@ TEST(Solver, UpdateStateEveryIterationOption) {
   ceres::Solve(options, problem, &x, &summary);
   num_iterations = summary.iterations.size() - 1;
   EXPECT_GT(num_iterations, 1);
-  for (int i = 0; i < callback.x_values.size(); ++i) {
-    EXPECT_EQ(50.0, callback.x_values[i]);
+  for (double value : callback.x_values) {
+    EXPECT_EQ(50.0, value);
   }
 
   // Second try: with updating
@@ -132,5 +126,4 @@ TEST(Solver, UpdateStateEveryIterationOption) {
   EXPECT_NE(original_x, callback.x_values[1]);
 }
 
-}  // namespace internal
-}  // namespace ceres
+}  // namespace ceres::internal

@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2015 Google Inc. All rights reserved.
+// Copyright 2023 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -31,22 +31,26 @@
 #ifndef CERES_INTERNAL_LEVENBERG_MARQUARDT_STRATEGY_H_
 #define CERES_INTERNAL_LEVENBERG_MARQUARDT_STRATEGY_H_
 
+#include "ceres/internal/disable_warnings.h"
 #include "ceres/internal/eigen.h"
+#include "ceres/internal/export.h"
 #include "ceres/trust_region_strategy.h"
 
-namespace ceres {
-namespace internal {
+namespace ceres::internal {
+
+class ContextImpl;
 
 // Levenberg-Marquardt step computation and trust region sizing
 // strategy based on on "Methods for Nonlinear Least Squares" by
 // K. Madsen, H.B. Nielsen and O. Tingleff. Available to download from
 //
 // http://www2.imm.dtu.dk/pubdb/views/edoc_download.php/3215/pdf/imm3215.pdf
-class LevenbergMarquardtStrategy : public TrustRegionStrategy {
+class CERES_NO_EXPORT LevenbergMarquardtStrategy final
+    : public TrustRegionStrategy {
  public:
   explicit LevenbergMarquardtStrategy(
       const TrustRegionStrategy::Options& options);
-  virtual ~LevenbergMarquardtStrategy();
+  ~LevenbergMarquardtStrategy() override;
 
   // TrustRegionStrategy interface
   TrustRegionStrategy::Summary ComputeStep(
@@ -74,14 +78,17 @@ class LevenbergMarquardtStrategy : public TrustRegionStrategy {
   const double max_diagonal_;
   double decrease_factor_;
   bool reuse_diagonal_;
-  Vector diagonal_;   // diagonal_ =  diag(J'J)
+  Vector diagonal_;  // diagonal_ =  diag(J'J)
   // Scaled copy of diagonal_. Stored here as optimization to prevent
   // allocations in every iteration and reuse when a step fails and
   // ComputeStep is called again.
-  Vector lm_diagonal_;  // lm_diagonal_ = diagonal_ / radius_;
+  Vector lm_diagonal_;  // lm_diagonal_ = sqrt(diagonal_ / radius_);
+  ContextImpl* context_;
+  int num_threads_;
 };
 
-}  // namespace internal
-}  // namespace ceres
+}  // namespace ceres::internal
+
+#include "ceres/internal/reenable_warnings.h"
 
 #endif  // CERES_INTERNAL_LEVENBERG_MARQUARDT_STRATEGY_H_

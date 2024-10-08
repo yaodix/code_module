@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2015 Google Inc. All rights reserved.
+// Copyright 2023 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -31,10 +31,10 @@
 #include "ceres/graph.h"
 
 #include <unordered_set>
+
 #include "gtest/gtest.h"
 
-namespace ceres {
-namespace internal {
+namespace ceres::internal {
 
 TEST(Graph, EmptyGraph) {
   Graph<int> graph;
@@ -147,5 +147,4 @@ TEST(WeightedGraph, NonExistentEdge) {
   EXPECT_EQ(graph.EdgeWeight(2, 3), 0);
 }
 
-}  // namespace internal
-}  // namespace ceres
+}  // namespace ceres::internal

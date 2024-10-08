@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2015 Google Inc. All rights reserved.
+// Copyright 2023 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -32,10 +32,12 @@
 #define CERES_INTERNAL_SINGLE_LINKAGE_CLUSTERING_H_
 
 #include <unordered_map>
-#include "ceres/graph.h"
 
-namespace ceres {
-namespace internal {
+#include "ceres/graph.h"
+#include "ceres/internal/disable_warnings.h"
+#include "ceres/internal/export.h"
+
+namespace ceres::internal {
 
 struct SingleLinkageClusteringOptions {
   // Graph edges with edge weight less than min_similarity are ignored
@@ -53,12 +55,13 @@ struct SingleLinkageClusteringOptions {
 //
 // The return value of this function is the number of clusters
 // identified by the algorithm.
-int ComputeSingleLinkageClustering(
+CERES_NO_EXPORT int ComputeSingleLinkageClustering(
     const SingleLinkageClusteringOptions& options,
     const WeightedGraph<int>& graph,
     std::unordered_map<int, int>* membership);
 
-}  // namespace internal
-}  // namespace ceres
+}  // namespace ceres::internal
+
+#include "ceres/internal/reenable_warnings.h"
 
 #endif  // CERES_INTERNAL_SINGLE_LINKAGE_CLUSTERING_H_

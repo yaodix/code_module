@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.10.0)
 project(HELLO)
 
 # set(CMAKE_BUILD_TYPE "Debug" CACHE STRING "set build type to debug")
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 # set(CMAKE_BUILD_TYPE "Debug")
 # SET(CMAKE_CXX_FLAGS_DEBUG "-O0 -Wall") 
 
@@ -24,11 +24,18 @@ include_directories(${EIGEN3_INCLUDE_DIRS})
 add_subdirectory(ceres)
 include_directories(/usr/local/ceres//include)
 
+add_subdirectory(slam_test)
 
-SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR})
+# SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR})
 
 add_executable(ceres_demo demo_01.cc)
 target_link_libraries(ceres_demo ceres)
 
 add_executable(fitting_epx fitting_epx.cc)
 target_link_libraries(fitting_epx ceres ${OpenCV_LIBS})
+
+add_executable(sba simple_BA.cc)
+target_link_libraries(sba ceres ${OpenCV_LIBS})
+
+add_executable(powerwell powerwell.cc)
+target_link_libraries(powerwell ceres ${OpenCV_LIBS})

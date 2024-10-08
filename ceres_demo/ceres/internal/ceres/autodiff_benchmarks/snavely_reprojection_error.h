@@ -40,11 +40,10 @@ struct SnavelyReprojectionError {
   SnavelyReprojectionError(double observed_x, double observed_y)
       : observed_x(observed_x), observed_y(observed_y) {}
 
-  SnavelyReprojectionError() = default;
   template <typename T>
-  bool operator()(const T* const camera,
-                  const T* const point,
-                  T* residuals) const {
+  inline bool operator()(const T* const camera,
+                         const T* const point,
+                         T* residuals) const {
     T ox = T(observed_x);
     T oy = T(observed_y);
 

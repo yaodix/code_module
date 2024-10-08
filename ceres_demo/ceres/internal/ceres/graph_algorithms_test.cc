@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2015 Google Inc. All rights reserved.
+// Copyright 2023 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -33,15 +33,13 @@
 #include <algorithm>
 #include <memory>
 #include <unordered_set>
+#include <vector>
 
 #include "ceres/graph.h"
-#include "ceres/internal/port.h"
+#include "ceres/internal/export.h"
 #include "gtest/gtest.h"
 
-namespace ceres {
-namespace internal {
-
-using std::vector;
+namespace ceres::internal {
 
 TEST(IndependentSetOrdering, Chain) {
   Graph<int> graph;
@@ -58,7 +56,7 @@ TEST(IndependentSetOrdering, Chain) {
 
   // 0-1-2-3-4
   // 0, 2, 4 should be in the independent set.
-  vector<int> ordering;
+  std::vector<int> ordering;
   int independent_set_size = IndependentSetOrdering(graph, &ordering);
 
   sort(ordering.begin(), ordering.begin() + 3);
@@ -92,7 +90,7 @@ TEST(IndependentSetOrdering, Star) {
   //      |
   //      3
   // 1, 2, 3, 4 should be in the independent set.
-  vector<int> ordering;
+  std::vector<int> ordering;
   int independent_set_size = IndependentSetOrdering(graph, &ordering);
   EXPECT_EQ(independent_set_size, 4);
   EXPECT_EQ(ordering.size(), 5);
@@ -111,8 +109,8 @@ TEST(Degree2MaximumSpanningForest, PreserveWeights) {
   graph.AddEdge(0, 1, 0.5);
   graph.AddEdge(1, 0, 0.5);
 
-  std::unique_ptr<WeightedGraph<int> > forest(
-					      Degree2MaximumSpanningForest(graph));
+  std::unique_ptr<WeightedGraph<int>> forest(
+      Degree2MaximumSpanningForest(graph));
 
   const std::unordered_set<int>& vertices = forest->vertices();
   EXPECT_EQ(vertices.size(), 2);
@@ -135,7 +133,8 @@ TEST(Degree2MaximumSpanningForest, StarGraph) {
   graph.AddEdge(0, 3, 3.0);
   graph.AddEdge(0, 4, 4.0);
 
-  std::unique_ptr<WeightedGraph<int> > forest(Degree2MaximumSpanningForest(graph));
+  std::unique_ptr<WeightedGraph<int>> forest(
+      Degree2MaximumSpanningForest(graph));
   const std::unordered_set<int>& vertices = forest->vertices();
   EXPECT_EQ(vertices.size(), 5);
 
@@ -200,7 +199,6 @@ TEST(VertexTotalOrdering, TotalOrdering) {
   }
 }
 
-
 TEST(StableIndependentSet, BreakTies) {
   Graph<int> graph;
   graph.AddVertex(0);
@@ -220,7 +218,7 @@ TEST(StableIndependentSet, BreakTies) {
   // guarantees that it will always be the first vertex in the
   // ordering vector.
   {
-    vector<int> ordering;
+    std::vector<int> ordering;
     ordering.push_back(0);
     ordering.push_back(1);
     ordering.push_back(2);
@@ -232,7 +230,7 @@ TEST(StableIndependentSet, BreakTies) {
   }
 
   {
-    vector<int> ordering;
+    std::vector<int> ordering;
     ordering.push_back(1);
     ordering.push_back(0);
     ordering.push_back(2);
@@ -244,5 +242,4 @@ TEST(StableIndependentSet, BreakTies) {
   }
 }
 
-}  // namespace internal
-}  // namespace ceres
+}  // namespace ceres::internal

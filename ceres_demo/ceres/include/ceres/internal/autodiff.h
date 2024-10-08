@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2019 Google Inc. All rights reserved.
+// Copyright 2023 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -132,17 +132,17 @@
 // respectively. This is how autodiff works for functors taking multiple vector
 // valued arguments (up to 6).
 //
-// Jacobian NULL pointers
-// ----------------------
-// In general, the functions below will accept NULL pointers for all or some of
-// the Jacobian parameters, meaning that those Jacobians will not be computed.
+// Jacobian null pointers (nullptr)
+// --------------------------------
+// In general, the functions below will accept nullptr for all or some of the
+// Jacobian parameters, meaning that those Jacobians will not be computed.
 
 #ifndef CERES_PUBLIC_INTERNAL_AUTODIFF_H_
 #define CERES_PUBLIC_INTERNAL_AUTODIFF_H_
 
-#include <stddef.h>
-
 #include <array>
+#include <cstddef>
+#include <utility>
 
 #include "ceres/internal/array_selector.h"
 #include "ceres/internal/eigen.h"
@@ -164,8 +164,7 @@
 #define CERES_AUTODIFF_MAX_RESIDUALS_ON_STACK 20
 #endif
 
-namespace ceres {
-namespace internal {
+namespace ceres::internal {
 
 // Extends src by a 1st order perturbation for every dimension and puts it in
 // dst. The size of src is N. Since this is also used for perturbations in
@@ -184,7 +183,7 @@ namespace internal {
 template <int j, int N, int Offset, typename T, typename JetT>
 struct Make1stOrderPerturbation {
  public:
-  static void Apply(const T* src, JetT* dst) {
+  inline static void Apply(const T* src, JetT* dst) {
     if (j == 0) {
       DCHECK(src);
       DCHECK(dst);
@@ -197,7 +196,7 @@ struct Make1stOrderPerturbation {
 template <int N, int Offset, typename T, typename JetT>
 struct Make1stOrderPerturbation<N, N, Offset, T, JetT> {
  public:
-  static void Apply(const T* src, JetT* dst) {}
+  static void Apply(const T* /* NOT USED */, JetT* /* NOT USED */) {}
 };
 
 // Calls Make1stOrderPerturbation for every parameter block.
@@ -213,14 +212,14 @@ template <typename Seq, int ParameterIdx = 0, int Offset = 0>
 struct Make1stOrderPerturbations;
 
 template <int N, int... Ns, int ParameterIdx, int Offset>
-struct Make1stOrderPerturbations<integer_sequence<int, N, Ns...>,
+struct Make1stOrderPerturbations<std::integer_sequence<int, N, Ns...>,
                                  ParameterIdx,
                                  Offset> {
   template <typename T, typename JetT>
-  static void Apply(T const* const* parameters, JetT* x) {
+  inline static void Apply(T const* const* parameters, JetT* x) {
     Make1stOrderPerturbation<0, N, Offset, T, JetT>::Apply(
         parameters[ParameterIdx], x + Offset);
-    Make1stOrderPerturbations<integer_sequence<int, Ns...>,
+    Make1stOrderPerturbations<std::integer_sequence<int, Ns...>,
                               ParameterIdx + 1,
                               Offset + N>::Apply(parameters, x);
   }
@@ -228,7 +227,9 @@ struct Make1stOrderPerturbations<integer_sequence<int, N, Ns...>,
 
 // End of 'recursion'. Nothing more to do.
 template <int ParameterIdx, int Total>
-struct Make1stOrderPerturbations<integer_sequence<int>, ParameterIdx, Total> {
+struct Make1stOrderPerturbations<std::integer_sequence<int>,
+                                 ParameterIdx,
+                                 Total> {
   template <typename T, typename JetT>
   static void Apply(T const* const* /* NOT USED */, JetT* /* NOT USED */) {}
 };
@@ -276,15 +277,15 @@ template <typename Seq, int ParameterIdx = 0, int Offset = 0>
 struct Take1stOrderParts;
 
 template <int N, int... Ns, int ParameterIdx, int Offset>
-struct Take1stOrderParts<integer_sequence<int, N, Ns...>,
+struct Take1stOrderParts<std::integer_sequence<int, N, Ns...>,
                          ParameterIdx,
                          Offset> {
   template <typename JetT, typename T>
-  static void Apply(int num_outputs, JetT* output, T** jacobians) {
+  inline static void Apply(int num_outputs, JetT* output, T** jacobians) {
     if (jacobians[ParameterIdx]) {
       Take1stOrderPart<Offset, N>(num_outputs, output, jacobians[ParameterIdx]);
     }
-    Take1stOrderParts<integer_sequence<int, Ns...>,
+    Take1stOrderParts<std::integer_sequence<int, Ns...>,
                       ParameterIdx + 1,
                       Offset + N>::Apply(num_outputs, output, jacobians);
   }
@@ -292,7 +293,7 @@ struct Take1stOrderParts<integer_sequence<int, N, Ns...>,
 
 // End of 'recursion'. Nothing more to do.
 template <int ParameterIdx, int Offset>
-struct Take1stOrderParts<integer_sequence<int>, ParameterIdx, Offset> {
+struct Take1stOrderParts<std::integer_sequence<int>, ParameterIdx, Offset> {
   template <typename T, typename JetT>
   static void Apply(int /* NOT USED*/,
                     JetT* /* NOT USED*/,
@@ -308,7 +309,7 @@ inline bool AutoDifferentiate(const Functor& functor,
                               int dynamic_num_outputs,
                               T* function_value,
                               T** jacobians) {
-  typedef Jet<T, ParameterDims::kNumParameters> JetT;
+  using JetT = Jet<T, ParameterDims::kNumParameters>;
   using Parameters = typename ParameterDims::Parameters;
 
   if (kNumResiduals != DYNAMIC) {
@@ -357,7 +358,6 @@ inline bool AutoDifferentiate(const Functor& functor,
   return true;
 }
 
-}  // namespace internal
-}  // namespace ceres
+}  // namespace ceres::internal
 
 #endif  // CERES_PUBLIC_INTERNAL_AUTODIFF_H_

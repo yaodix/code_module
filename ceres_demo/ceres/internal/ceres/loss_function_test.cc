@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2015 Google Inc. All rights reserved.
+// Copyright 2023 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -66,7 +66,7 @@ void AssertLossFunctionIsValid(const LossFunction& loss, double s) {
   ASSERT_NEAR(fd_1, rho[1], 1e-6);
 
   // Second derivative.
-  const double fd_2 = (fwd[0] - 2*rho[0] + bwd[0]) / (kH * kH);
+  const double fd_2 = (fwd[0] - 2 * rho[0] + bwd[0]) / (kH * kH);
   ASSERT_NEAR(fd_2, rho[2], 1e-6);
 }
 }  // namespace
@@ -195,7 +195,7 @@ TEST(LossFunction, ScaledLoss) {
   // construction with the call to AssertLossFunctionIsValid() because Apple's
   // GCC is unable to eliminate the copy of ScaledLoss, which is not copyable.
   {
-    ScaledLoss scaled_loss(NULL, 6, TAKE_OWNERSHIP);
+    ScaledLoss scaled_loss(nullptr, 6, TAKE_OWNERSHIP);
     AssertLossFunctionIsValid(scaled_loss, 0.323);
   }
   {
@@ -219,15 +219,16 @@ TEST(LossFunction, ScaledLoss) {
     AssertLossFunctionIsValid(scaled_loss, 1.792);
   }
   {
-    ScaledLoss scaled_loss(
-        new TolerantLoss(1.3, 0.1), 10, TAKE_OWNERSHIP);
+    ScaledLoss scaled_loss(new TolerantLoss(1.3, 0.1), 10, TAKE_OWNERSHIP);
     AssertLossFunctionIsValid(scaled_loss, 1.792);
   }
   {
-    ScaledLoss scaled_loss(
-        new ComposedLoss(
-            new HuberLoss(0.8), TAKE_OWNERSHIP,
-            new TolerantLoss(1.3, 0.5), TAKE_OWNERSHIP), 10, TAKE_OWNERSHIP);
+    ScaledLoss scaled_loss(new ComposedLoss(new HuberLoss(0.8),
+                                            TAKE_OWNERSHIP,
+                                            new TolerantLoss(1.3, 0.5),
+                                            TAKE_OWNERSHIP),
+                           10,
+                           TAKE_OWNERSHIP);
     AssertLossFunctionIsValid(scaled_loss, 1.792);
   }
 }
@@ -235,8 +236,7 @@ TEST(LossFunction, ScaledLoss) {
 TEST(LossFunction, LossFunctionWrapper) {
   // Initialization
   HuberLoss loss_function1(1.0);
-  LossFunctionWrapper loss_function_wrapper(new HuberLoss(1.0),
-                                            TAKE_OWNERSHIP);
+  LossFunctionWrapper loss_function_wrapper(new HuberLoss(1.0), TAKE_OWNERSHIP);
 
   double s = 0.862;
   double rho_gold[3];
@@ -265,23 +265,22 @@ TEST(LossFunction, LossFunctionWrapper) {
     EXPECT_NEAR(rho[i], rho_gold[i], 1e-12);
   }
 
-  // Set to NULL
+  // Set to nullptr
   TrivialLoss loss_function4;
-  loss_function_wrapper.Reset(NULL, TAKE_OWNERSHIP);
+  loss_function_wrapper.Reset(nullptr, TAKE_OWNERSHIP);
   loss_function_wrapper.Evaluate(s, rho);
   loss_function4.Evaluate(s, rho_gold);
   for (int i = 0; i < 3; ++i) {
     EXPECT_NEAR(rho[i], rho_gold[i], 1e-12);
   }
 
-  // Set to NULL, not taking ownership
-  loss_function_wrapper.Reset(NULL, DO_NOT_TAKE_OWNERSHIP);
+  // Set to nullptr, not taking ownership
+  loss_function_wrapper.Reset(nullptr, DO_NOT_TAKE_OWNERSHIP);
   loss_function_wrapper.Evaluate(s, rho);
   loss_function4.Evaluate(s, rho_gold);
   for (int i = 0; i < 3; ++i) {
     EXPECT_NEAR(rho[i], rho_gold[i], 1e-12);
   }
-
 }
 
 }  // namespace internal

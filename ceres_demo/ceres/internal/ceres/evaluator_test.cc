@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2015 Google Inc. All rights reserved.
+// Copyright 2023 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -34,12 +34,15 @@
 #include "ceres/evaluator.h"
 
 #include <memory>
+#include <string>
+#include <vector>
+
 #include "ceres/casts.h"
 #include "ceres/cost_function.h"
 #include "ceres/crs_matrix.h"
 #include "ceres/evaluator_test_utils.h"
 #include "ceres/internal/eigen.h"
-#include "ceres/local_parameterization.h"
+#include "ceres/manifold.h"
 #include "ceres/problem_impl.h"
 #include "ceres/program.h"
 #include "ceres/sized_cost_function.h"
@@ -51,14 +54,11 @@
 namespace ceres {
 namespace internal {
 
-using std::string;
-using std::vector;
-
 // TODO(keir): Consider pushing this into a common test utils file.
 template <int kFactor, int kNumResiduals, int... Ns>
 class ParameterIgnoringCostFunction
     : public SizedCostFunction<kNumResiduals, Ns...> {
-  typedef SizedCostFunction<kNumResiduals, Ns...> Base;
+  using Base = SizedCostFunction<kNumResiduals, Ns...>;
 
  public:
   explicit ParameterIgnoringCostFunction(bool succeeds = true)
@@ -74,9 +74,9 @@ class ParameterIgnoringCostFunction
       for (int k = 0; k < Base::parameter_block_sizes().size(); ++k) {
         // The jacobians here are full sized, but they are transformed in the
         // evaluator into the "local" jacobian. In the tests, the "subset
-        // constant" parameterization is used, which should pick out columns
-        // from these jacobians. Put values in the jacobian that make this
-        // obvious; in particular, make the jacobians like this:
+        // constant" manifold is used, which should pick out columns from these
+        // jacobians. Put values in the jacobian that make this obvious; in
+        // particular, make the jacobians like this:
         //
         //   1 2 3 4 ...
         //   1 2 3 4 ...   .*  kFactor
@@ -105,31 +105,32 @@ struct EvaluatorTestOptions {
   EvaluatorTestOptions(LinearSolverType linear_solver_type,
                        int num_eliminate_blocks,
                        bool dynamic_sparsity = false)
-    : linear_solver_type(linear_solver_type),
-      num_eliminate_blocks(num_eliminate_blocks),
-      dynamic_sparsity(dynamic_sparsity) {}
+      : linear_solver_type(linear_solver_type),
+        num_eliminate_blocks(num_eliminate_blocks),
+        dynamic_sparsity(dynamic_sparsity) {}
 
   LinearSolverType linear_solver_type;
   int num_eliminate_blocks;
   bool dynamic_sparsity;
 };
 
-struct EvaluatorTest
-    : public ::testing::TestWithParam<EvaluatorTestOptions> {
-  Evaluator* CreateEvaluator(Program* program) {
+struct EvaluatorTest : public ::testing::TestWithParam<EvaluatorTestOptions> {
+  std::unique_ptr<Evaluator> CreateEvaluator(Program* program) {
     // This program is straight from the ProblemImpl, and so has no index/offset
     // yet; compute it here as required by the evaluator implementations.
     program->SetParameterOffsetsAndIndex();
 
     if (VLOG_IS_ON(1)) {
-      string report;
-      StringAppendF(&report, "Creating evaluator with type: %d",
+      std::string report;
+      StringAppendF(&report,
+                    "Creating evaluator with type: %d",
                     GetParam().linear_solver_type);
       if (GetParam().linear_solver_type == SPARSE_NORMAL_CHOLESKY) {
-        StringAppendF(&report, ", dynamic_sparsity: %d",
-                      GetParam().dynamic_sparsity);
+        StringAppendF(
+            &report, ", dynamic_sparsity: %d", GetParam().dynamic_sparsity);
       }
-      StringAppendF(&report, " and num_eliminate_blocks: %d",
+      StringAppendF(&report,
+                    " and num_eliminate_blocks: %d",
                     GetParam().num_eliminate_blocks);
       VLOG(1) << report;
     }
@@ -138,19 +139,19 @@ struct EvaluatorTest
     options.num_eliminate_blocks = GetParam().num_eliminate_blocks;
     options.dynamic_sparsity = GetParam().dynamic_sparsity;
     options.context = problem.context();
-    string error;
+    std::string error;
     return Evaluator::Create(options, program, &error);
   }
 
-  void EvaluateAndCompare(ProblemImpl *problem,
+  void EvaluateAndCompare(ProblemImpl* problem,
                           int expected_num_rows,
                           int expected_num_cols,
                           double expected_cost,
                           const double* expected_residuals,
                           const double* expected_gradient,
                           const double* expected_jacobian) {
-    std::unique_ptr<Evaluator> evaluator(
-        CreateEvaluator(problem->mutable_program()));
+    std::unique_ptr<Evaluator> evaluator =
+        CreateEvaluator(problem->mutable_program());
     int num_residuals = expected_num_rows;
     int num_parameters = expected_num_cols;
 
@@ -169,14 +170,16 @@ struct EvaluatorTest
     ASSERT_EQ(expected_num_rows, jacobian->num_rows());
     ASSERT_EQ(expected_num_cols, jacobian->num_cols());
 
-    vector<double> state(evaluator->NumParameters());
+    std::vector<double> state(evaluator->NumParameters());
 
+    // clang-format off
     ASSERT_TRUE(evaluator->Evaluate(
           &state[0],
           &cost,
           expected_residuals != nullptr ? &residuals[0]  : nullptr,
           expected_gradient  != nullptr ? &gradient[0]   : nullptr,
           expected_jacobian  != nullptr ? jacobian.get() : nullptr));
+    // clang-format on
 
     Matrix actual_jacobian;
     if (expected_jacobian != nullptr) {
@@ -196,15 +199,15 @@ struct EvaluatorTest
   }
 
   // Try all combinations of parameters for the evaluator.
-  void CheckAllEvaluationCombinations(const ExpectedEvaluation &expected) {
+  void CheckAllEvaluationCombinations(const ExpectedEvaluation& expected) {
     for (int i = 0; i < 8; ++i) {
       EvaluateAndCompare(&problem,
                          expected.num_rows,
                          expected.num_cols,
                          expected.cost,
                          (i & 1) ? expected.residuals : nullptr,
-                         (i & 2) ? expected.gradient  : nullptr,
-                         (i & 4) ? expected.jacobian  : nullptr);
+                         (i & 2) ? expected.gradient : nullptr,
+                         (i & 4) ? expected.jacobian : nullptr);
     }
   }
 
@@ -217,15 +220,15 @@ struct EvaluatorTest
 };
 
 static void SetSparseMatrixConstant(SparseMatrix* sparse_matrix, double value) {
-  VectorRef(sparse_matrix->mutable_values(),
-            sparse_matrix->num_nonzeros()).setConstant(value);
+  VectorRef(sparse_matrix->mutable_values(), sparse_matrix->num_nonzeros())
+      .setConstant(value);
 }
 
 TEST_P(EvaluatorTest, SingleResidualProblem) {
-  problem.AddResidualBlock(new ParameterIgnoringCostFunction<1, 3, 2, 3, 4>,
-                           nullptr,
-                           x, y, z);
+  problem.AddResidualBlock(
+      new ParameterIgnoringCostFunction<1, 3, 2, 3, 4>, nullptr, x, y, z);
 
+  // clang-format off
   ExpectedEvaluation expected = {
     // Rows/columns
     3, 9,
@@ -245,14 +248,15 @@ TEST_P(EvaluatorTest, SingleResidualProblem) {
       1, 2,   1, 2, 3,   1, 2, 3, 4
     }
   };
+  // clang-format on
   CheckAllEvaluationCombinations(expected);
 }
 
 TEST_P(EvaluatorTest, SingleResidualProblemWithPermutedParameters) {
   // Add the parameters in explicit order to force the ordering in the program.
-  problem.AddParameterBlock(x,  2);
-  problem.AddParameterBlock(y,  3);
-  problem.AddParameterBlock(z,  4);
+  problem.AddParameterBlock(x, 2);
+  problem.AddParameterBlock(y, 3);
+  problem.AddParameterBlock(z, 4);
 
   // Then use a cost function which is similar to the others, but swap around
   // the ordering of the parameters to the cost function. This shouldn't affect
@@ -260,10 +264,10 @@ TEST_P(EvaluatorTest, SingleResidualProblemWithPermutedParameters) {
   // At one point the compressed row evaluator had a bug that went undetected
   // for a long time, since by chance most users added parameters to the problem
   // in the same order that they occurred as parameters to a cost function.
-  problem.AddResidualBlock(new ParameterIgnoringCostFunction<1, 3, 4, 3, 2>,
-                           nullptr,
-                           z, y, x);
+  problem.AddResidualBlock(
+      new ParameterIgnoringCostFunction<1, 3, 4, 3, 2>, nullptr, z, y, x);
 
+  // clang-format off
   ExpectedEvaluation expected = {
     // Rows/columns
     3, 9,
@@ -283,6 +287,7 @@ TEST_P(EvaluatorTest, SingleResidualProblemWithPermutedParameters) {
       1, 2,   1, 2, 3,   1, 2, 3, 4
     }
   };
+  // clang-format on
   CheckAllEvaluationCombinations(expected);
 }
 
@@ -303,10 +308,10 @@ TEST_P(EvaluatorTest, SingleResidualProblemWithNuisanceParameters) {
   problem.AddParameterBlock(z, 4);
   problem.AddParameterBlock(d, 3);
 
-  problem.AddResidualBlock(new ParameterIgnoringCostFunction<1, 3, 2, 3, 4>,
-                           nullptr,
-                           x, y, z);
+  problem.AddResidualBlock(
+      new ParameterIgnoringCostFunction<1, 3, 2, 3, 4>, nullptr, x, y, z);
 
+  // clang-format off
   ExpectedEvaluation expected = {
     // Rows/columns
     3, 16,
@@ -330,30 +335,29 @@ TEST_P(EvaluatorTest, SingleResidualProblemWithNuisanceParameters) {
       0, 0,    1, 2,    0,    1, 2, 3,    0,    1, 2, 3, 4,    0, 0, 0
     }
   };
+  // clang-format on
   CheckAllEvaluationCombinations(expected);
 }
 
 TEST_P(EvaluatorTest, MultipleResidualProblem) {
   // Add the parameters in explicit order to force the ordering in the program.
-  problem.AddParameterBlock(x,  2);
-  problem.AddParameterBlock(y,  3);
-  problem.AddParameterBlock(z,  4);
+  problem.AddParameterBlock(x, 2);
+  problem.AddParameterBlock(y, 3);
+  problem.AddParameterBlock(z, 4);
 
   // f(x, y) in R^2
-  problem.AddResidualBlock(new ParameterIgnoringCostFunction<1, 2, 2, 3>,
-                           nullptr,
-                           x, y);
+  problem.AddResidualBlock(
+      new ParameterIgnoringCostFunction<1, 2, 2, 3>, nullptr, x, y);
 
   // g(x, z) in R^3
-  problem.AddResidualBlock(new ParameterIgnoringCostFunction<2, 3, 2, 4>,
-                           nullptr,
-                           x, z);
+  problem.AddResidualBlock(
+      new ParameterIgnoringCostFunction<2, 3, 2, 4>, nullptr, x, z);
 
   // h(y, z) in R^4
-  problem.AddResidualBlock(new ParameterIgnoringCostFunction<3, 4, 3, 4>,
-                           nullptr,
-                           y, z);
+  problem.AddResidualBlock(
+      new ParameterIgnoringCostFunction<3, 4, 3, 4>, nullptr, y, z);
 
+  // clang-format off
   ExpectedEvaluation expected = {
     // Rows/columns
     9, 9,
@@ -385,38 +389,37 @@ TEST_P(EvaluatorTest, MultipleResidualProblem) {
                       0, 0,    3, 6, 9,    3, 6, 9, 12
     }
   };
+  // clang-format on
   CheckAllEvaluationCombinations(expected);
 }
 
-TEST_P(EvaluatorTest, MultipleResidualsWithLocalParameterizations) {
+TEST_P(EvaluatorTest, MultipleResidualsWithManifolds) {
   // Add the parameters in explicit order to force the ordering in the program.
-  problem.AddParameterBlock(x,  2);
+  problem.AddParameterBlock(x, 2);
 
   // Fix y's first dimension.
-  vector<int> y_fixed;
+  std::vector<int> y_fixed;
   y_fixed.push_back(0);
-  problem.AddParameterBlock(y, 3, new SubsetParameterization(3, y_fixed));
+  problem.AddParameterBlock(y, 3, new SubsetManifold(3, y_fixed));
 
   // Fix z's second dimension.
-  vector<int> z_fixed;
+  std::vector<int> z_fixed;
   z_fixed.push_back(1);
-  problem.AddParameterBlock(z, 4, new SubsetParameterization(4, z_fixed));
+  problem.AddParameterBlock(z, 4, new SubsetManifold(4, z_fixed));
 
   // f(x, y) in R^2
-  problem.AddResidualBlock(new ParameterIgnoringCostFunction<1, 2, 2, 3>,
-                           nullptr,
-                           x, y);
+  problem.AddResidualBlock(
+      new ParameterIgnoringCostFunction<1, 2, 2, 3>, nullptr, x, y);
 
   // g(x, z) in R^3
-  problem.AddResidualBlock(new ParameterIgnoringCostFunction<2, 3, 2, 4>,
-                           nullptr,
-                           x, z);
+  problem.AddResidualBlock(
+      new ParameterIgnoringCostFunction<2, 3, 2, 4>, nullptr, x, z);
 
   // h(y, z) in R^4
-  problem.AddResidualBlock(new ParameterIgnoringCostFunction<3, 4, 3, 4>,
-                           nullptr,
-                           y, z);
+  problem.AddResidualBlock(
+      new ParameterIgnoringCostFunction<3, 4, 3, 4>, nullptr, y, z);
 
+  // clang-format off
   ExpectedEvaluation expected = {
     // Rows/columns
     9, 7,
@@ -448,6 +451,7 @@ TEST_P(EvaluatorTest, MultipleResidualsWithLocalParameterizations) {
                       0, 0,    6, 9,    3, 9, 12
     }
   };
+  // clang-format on
   CheckAllEvaluationCombinations(expected);
 }
 
@@ -458,24 +462,21 @@ TEST_P(EvaluatorTest, MultipleResidualProblemWithSomeConstantParameters) {
   double z[4];
 
   // Add the parameters in explicit order to force the ordering in the program.
-  problem.AddParameterBlock(x,  2);
-  problem.AddParameterBlock(y,  3);
-  problem.AddParameterBlock(z,  4);
+  problem.AddParameterBlock(x, 2);
+  problem.AddParameterBlock(y, 3);
+  problem.AddParameterBlock(z, 4);
 
   // f(x, y) in R^2
- problem.AddResidualBlock(new ParameterIgnoringCostFunction<1, 2, 2, 3>,
-                          nullptr,
-                          x, y);
+  problem.AddResidualBlock(
+      new ParameterIgnoringCostFunction<1, 2, 2, 3>, nullptr, x, y);
 
   // g(x, z) in R^3
- problem.AddResidualBlock(new ParameterIgnoringCostFunction<2, 3, 2, 4>,
-                          nullptr,
-                          x, z);
+  problem.AddResidualBlock(
+      new ParameterIgnoringCostFunction<2, 3, 2, 4>, nullptr, x, z);
 
   // h(y, z) in R^4
-  problem.AddResidualBlock(new ParameterIgnoringCostFunction<3, 4, 3, 4>,
-                           nullptr,
-                           y, z);
+  problem.AddResidualBlock(
+      new ParameterIgnoringCostFunction<3, 4, 3, 4>, nullptr, y, z);
 
   // For this test, "z" is constant.
   problem.SetParameterBlockConstant(z);
@@ -484,7 +485,7 @@ TEST_P(EvaluatorTest, MultipleResidualProblemWithSomeConstantParameters) {
   // Normally, the preprocessing of the program that happens in solver_impl
   // takes care of this, but we don't want to invoke the solver here.
   Program reduced_program;
-  vector<ParameterBlock*>* parameter_blocks =
+  std::vector<ParameterBlock*>* parameter_blocks =
       problem.mutable_program()->mutable_parameter_blocks();
 
   // "z" is the last parameter; save it for later and pop it off temporarily.
@@ -493,6 +494,7 @@ TEST_P(EvaluatorTest, MultipleResidualProblemWithSomeConstantParameters) {
   ParameterBlock* parameter_block_z = parameter_blocks->back();
   parameter_blocks->pop_back();
 
+  // clang-format off
   ExpectedEvaluation expected = {
     // Rows/columns
     9, 5,
@@ -523,6 +525,7 @@ TEST_P(EvaluatorTest, MultipleResidualProblemWithSomeConstantParameters) {
                       0, 0,    3, 6, 9
     }
   };
+  // clang-format on
   CheckAllEvaluationCombinations(expected);
 
   // Restore parameter block z, so it will get freed in a consistent way.
@@ -541,8 +544,8 @@ TEST_P(EvaluatorTest, EvaluatorAbortsForResidualsThatFailToEvaluate) {
   // The values are ignored.
   double state[9];
 
-  std::unique_ptr<Evaluator> evaluator(
-      CreateEvaluator(problem.mutable_program()));
+  std::unique_ptr<Evaluator> evaluator =
+      CreateEvaluator(problem.mutable_program());
   std::unique_ptr<SparseMatrix> jacobian(evaluator->CreateJacobian());
   double cost;
   EXPECT_FALSE(evaluator->Evaluate(state, &cost, nullptr, nullptr, nullptr));
@@ -616,7 +619,7 @@ TEST(Evaluator, EvaluatorRespectsParameterChanges) {
   options.linear_solver_type = DENSE_QR;
   options.num_eliminate_blocks = 0;
   options.context = problem.context();
-  string error;
+  std::string error;
   std::unique_ptr<Evaluator> evaluator(
       Evaluator::Create(options, program, &error));
   std::unique_ptr<SparseMatrix> jacobian(evaluator->CreateJacobian());
@@ -671,6 +674,52 @@ TEST(Evaluator, EvaluatorRespectsParameterChanges) {
         << actual_jacobian << "\nExpected:\n"
         << expected_jacobian;
   }
+}
+
+class HugeCostFunction : public SizedCostFunction<46341, 46345> {
+  bool Evaluate(double const* const* parameters,
+                double* residuals,
+                double** jacobians) const override {
+    return true;
+  }
+};
+
+TEST(Evaluator, LargeProblemDoesNotCauseCrashBlockJacobianWriter) {
+  ProblemImpl problem;
+  std::vector<double> x(46345);
+
+  problem.AddResidualBlock(new HugeCostFunction, nullptr, x.data());
+  Evaluator::Options options;
+  options.linear_solver_type = SPARSE_NORMAL_CHOLESKY;
+  options.context = problem.context();
+  options.num_eliminate_blocks = 0;
+  options.dynamic_sparsity = false;
+  std::string error;
+  auto program = problem.mutable_program();
+  program->SetParameterOffsetsAndIndex();
+  auto evaluator = Evaluator::Create(options, program, &error);
+  auto jacobian = evaluator->CreateJacobian();
+  EXPECT_EQ(jacobian, nullptr);
+}
+
+TEST(Evaluator, LargeProblemDoesNotCauseCrashCompressedRowJacobianWriter) {
+  ProblemImpl problem;
+  std::vector<double> x(46345);
+
+  problem.AddResidualBlock(new HugeCostFunction, nullptr, x.data());
+  Evaluator::Options options;
+  // CGNR on CUDA_SPARSE is the only combination that triggers a
+  // CompressedRowJacobianWriter.
+  options.linear_solver_type = CGNR;
+  options.sparse_linear_algebra_library_type = CUDA_SPARSE;
+  options.context = problem.context();
+  options.num_eliminate_blocks = 0;
+  std::string error;
+  auto program = problem.mutable_program();
+  program->SetParameterOffsetsAndIndex();
+  auto evaluator = Evaluator::Create(options, program, &error);
+  auto jacobian = evaluator->CreateJacobian();
+  EXPECT_EQ(jacobian, nullptr);
 }
 
 }  // namespace internal

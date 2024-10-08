@@ -1,6 +1,6 @@
 
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2017 Google Inc. All rights reserved.
+// Copyright 2023 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -30,27 +30,27 @@
 // Author: mierle@gmail.com (Keir Mierle)
 
 #include "ceres/tiny_solver_autodiff_function.h"
-#include "ceres/tiny_solver.h"
-#include "ceres/tiny_solver_test_util.h"
 
 #include <algorithm>
 #include <cmath>
 #include <limits>
 
+#include "ceres/tiny_solver.h"
+#include "ceres/tiny_solver_test_util.h"
 #include "gtest/gtest.h"
 
 namespace ceres {
 
 struct AutoDiffTestFunctor {
-  template<typename T>
+  template <typename T>
   bool operator()(const T* const parameters, T* residuals) const {
     // Shift the parameters so the solution is not at the origin, to prevent
     // accidentally showing "PASS".
     const T& a = parameters[0] - T(1.0);
     const T& b = parameters[1] - T(2.0);
     const T& c = parameters[2] - T(3.0);
-    residuals[0] = 2.*a + 0.*b + 1.*c;
-    residuals[1] = 0.*a + 4.*b + 6.*c;
+    residuals[0] = 2. * a + 0. * b + 1. * c;
+    residuals[1] = 0. * a + 4. * b + 6. * c;
     return true;
   }
 };
@@ -60,8 +60,8 @@ struct AutoDiffTestFunctor {
 static double const kTolerance = std::numeric_limits<double>::epsilon() * 10;
 
 TEST(TinySolverAutoDiffFunction, SimpleFunction) {
-  typedef TinySolverAutoDiffFunction<AutoDiffTestFunctor, 2, 3>
-      AutoDiffTestFunction;
+  using AutoDiffTestFunction =
+      TinySolverAutoDiffFunction<AutoDiffTestFunctor, 2, 3>;
   AutoDiffTestFunctor autodiff_test_functor;
   AutoDiffTestFunction f(autodiff_test_functor);
 
@@ -97,17 +97,15 @@ TEST(TinySolverAutoDiffFunction, SimpleFunction) {
 
 class DynamicResidualsFunctor {
  public:
-  typedef double Scalar;
+  using Scalar = double;
   enum {
     NUM_RESIDUALS = Eigen::Dynamic,
     NUM_PARAMETERS = 3,
   };
 
-  int NumResiduals() const {
-    return 2;
-  }
+  int NumResiduals() const { return 2; }
 
-  template<typename T>
+  template <typename T>
   bool operator()(const T* parameters, T* residuals) const {
     // Jacobian is not evaluated by cost function, but by autodiff.
     T* jacobian = nullptr;
@@ -115,7 +113,7 @@ class DynamicResidualsFunctor {
   }
 };
 
-template<typename Function, typename Vector>
+template <typename Function, typename Vector>
 void TestHelper(const Function& f, const Vector& x0) {
   Vector x = x0;
   Eigen::Vector2d residuals;
@@ -133,10 +131,8 @@ TEST(TinySolverAutoDiffFunction, ResidualsDynamicAutoDiff) {
   Eigen::Vector3d x0(0.76026643, -30.01799744, 0.55192142);
 
   DynamicResidualsFunctor f;
-  using AutoDiffCostFunctor =
-      ceres::TinySolverAutoDiffFunction<DynamicResidualsFunctor,
-                                        Eigen::Dynamic,
-                                        3>;
+  using AutoDiffCostFunctor = ceres::
+      TinySolverAutoDiffFunction<DynamicResidualsFunctor, Eigen::Dynamic, 3>;
   AutoDiffCostFunctor f_autodiff(f);
 
   Eigen::Vector2d residuals;
@@ -144,7 +140,7 @@ TEST(TinySolverAutoDiffFunction, ResidualsDynamicAutoDiff) {
   EXPECT_GT(residuals.squaredNorm() / 2.0, 1e-10);
 
   TinySolver<AutoDiffCostFunctor> solver;
-  solver.Solve(f, &x0);
+  solver.Solve(f_autodiff, &x0);
   EXPECT_NEAR(0.0, solver.summary.final_cost, 1e-10);
 }
 

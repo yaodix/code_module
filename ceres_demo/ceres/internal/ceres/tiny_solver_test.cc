@@ -1,6 +1,6 @@
 
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2017 Google Inc. All rights reserved.
+// Copyright 2023 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -30,22 +30,22 @@
 // Author: mierle@gmail.com (Keir Mierle)
 
 #include "ceres/tiny_solver.h"
-#include "ceres/tiny_solver_test_util.h"
 
 #include <algorithm>
 #include <cmath>
 
+#include "ceres/tiny_solver_test_util.h"
 #include "gtest/gtest.h"
 
 namespace ceres {
 
-typedef Eigen::Matrix<double, 2, 1> Vec2;
-typedef Eigen::Matrix<double, 3, 1> Vec3;
-typedef Eigen::VectorXd VecX;
+using Vec2 = Eigen::Matrix<double, 2, 1>;
+using Vec3 = Eigen::Matrix<double, 3, 1>;
+using VecX = Eigen::VectorXd;
 
 class ExampleStatic {
  public:
-  typedef double Scalar;
+  using Scalar = double;
   enum {
     // Can also be Eigen::Dynamic.
     NUM_RESIDUALS = 2,
@@ -60,15 +60,13 @@ class ExampleStatic {
 
 class ExampleParametersDynamic {
  public:
-  typedef double Scalar;
+  using Scalar = double;
   enum {
     NUM_RESIDUALS = 2,
     NUM_PARAMETERS = Eigen::Dynamic,
   };
 
-  int NumParameters() const {
-    return 3;
-  }
+  int NumParameters() const { return 3; }
 
   bool operator()(const double* parameters,
                   double* residuals,
@@ -79,15 +77,13 @@ class ExampleParametersDynamic {
 
 class ExampleResidualsDynamic {
  public:
-  typedef double Scalar;
+  using Scalar = double;
   enum {
     NUM_RESIDUALS = Eigen::Dynamic,
     NUM_PARAMETERS = 3,
   };
 
-  int NumResiduals() const {
-    return 2;
-  }
+  int NumResiduals() const { return 2; }
 
   bool operator()(const double* parameters,
                   double* residuals,
@@ -98,19 +94,15 @@ class ExampleResidualsDynamic {
 
 class ExampleAllDynamic {
  public:
-  typedef double Scalar;
+  using Scalar = double;
   enum {
     NUM_RESIDUALS = Eigen::Dynamic,
     NUM_PARAMETERS = Eigen::Dynamic,
   };
 
-  int NumResiduals() const {
-    return 2;
-  }
+  int NumResiduals() const { return 2; }
 
-  int NumParameters() const {
-    return 3;
-  }
+  int NumParameters() const { return 3; }
 
   bool operator()(const double* parameters,
                   double* residuals,
@@ -119,11 +111,11 @@ class ExampleAllDynamic {
   }
 };
 
-template<typename Function, typename Vector>
+template <typename Function, typename Vector>
 void TestHelper(const Function& f, const Vector& x0) {
   Vector x = x0;
   Vec2 residuals;
-  f(x.data(), residuals.data(), NULL);
+  f(x.data(), residuals.data(), nullptr);
   EXPECT_GT(residuals.squaredNorm() / 2.0, 1e-10);
 
   TinySolver<Function> solver;

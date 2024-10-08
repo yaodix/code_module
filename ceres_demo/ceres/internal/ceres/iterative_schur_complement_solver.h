@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2015 Google Inc. All rights reserved.
+// Copyright 2023 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -32,12 +32,14 @@
 #define CERES_INTERNAL_ITERATIVE_SCHUR_COMPLEMENT_SOLVER_H_
 
 #include <memory>
-#include "ceres/linear_solver.h"
+
+#include "ceres/internal/disable_warnings.h"
 #include "ceres/internal/eigen.h"
+#include "ceres/internal/export.h"
+#include "ceres/linear_solver.h"
 #include "ceres/types.h"
 
-namespace ceres {
-namespace internal {
+namespace ceres::internal {
 
 class BlockSparseMatrix;
 class ImplicitSchurComplement;
@@ -50,7 +52,7 @@ class Preconditioner;
 // The algorithm used by this solver was developed in a series of
 // papers - "Agarwal et al, Bundle Adjustment in the Large, ECCV 2010"
 // and "Wu et al, Multicore Bundle Adjustment, submitted to CVPR
-// 2011" at the Univeristy of Washington.
+// 2011" at the University of Washington.
 //
 // The key idea is that one can run Conjugate Gradients on the Schur
 // Complement system without explicitly forming the Schur Complement
@@ -67,20 +69,21 @@ class Preconditioner;
 // a proof of this fact and others related to this solver please see
 // the section on Domain Decomposition Methods in Saad's book
 // "Iterative Methods for Sparse Linear Systems".
-class IterativeSchurComplementSolver : public BlockSparseMatrixSolver {
+class CERES_NO_EXPORT IterativeSchurComplementSolver final
+    : public BlockSparseMatrixSolver {
  public:
-  explicit IterativeSchurComplementSolver(const LinearSolver::Options& options);
-  IterativeSchurComplementSolver(const IterativeSchurComplementSolver&) = delete;
+  explicit IterativeSchurComplementSolver(LinearSolver::Options options);
+  IterativeSchurComplementSolver(const IterativeSchurComplementSolver&) =
+      delete;
   void operator=(const IterativeSchurComplementSolver&) = delete;
 
-  virtual ~IterativeSchurComplementSolver();
+  ~IterativeSchurComplementSolver() override;
 
  private:
-  LinearSolver::Summary SolveImpl(
-      BlockSparseMatrix* A,
-      const double* b,
-      const LinearSolver::PerSolveOptions& options,
-      double* x) final;
+  LinearSolver::Summary SolveImpl(BlockSparseMatrix* A,
+                                  const double* b,
+                                  const LinearSolver::PerSolveOptions& options,
+                                  double* x) final;
 
   void CreatePreconditioner(BlockSparseMatrix* A);
 
@@ -90,7 +93,8 @@ class IterativeSchurComplementSolver : public BlockSparseMatrixSolver {
   Vector reduced_linear_system_solution_;
 };
 
-}  // namespace internal
-}  // namespace ceres
+}  // namespace ceres::internal
+
+#include "ceres/internal/reenable_warnings.h"
 
 #endif  // CERES_INTERNAL_ITERATIVE_SCHUR_COMPLEMENT_SOLVER_H_

@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2015 Google Inc. All rights reserved.
+// Copyright 2023 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -31,60 +31,61 @@
 #ifndef CERES_PUBLIC_INTERNAL_PORT_H_
 #define CERES_PUBLIC_INTERNAL_PORT_H_
 
-// This file needs to compile as c code.
-#include "ceres/internal/config.h"
-
-#if defined(CERES_USE_OPENMP)
-#  if defined(CERES_USE_CXX11_THREADS) || defined(CERES_NO_THREADS)
-#    error CERES_USE_OPENMP is mutually exclusive to CERES_USE_CXX11_THREADS and CERES_NO_THREADS
-#  endif
-#elif defined(CERES_USE_CXX11_THREADS)
-#  if defined(CERES_USE_OPENMP) || defined(CERES_NO_THREADS)
-#    error CERES_USE_CXX11_THREADS is mutually exclusive to CERES_USE_OPENMP, CERES_USE_CXX11_THREADS and CERES_NO_THREADS
-#  endif
-#elif defined(CERES_NO_THREADS)
-#  if defined(CERES_USE_OPENMP) || defined(CERES_USE_CXX11_THREADS)
-#    error CERES_NO_THREADS is mutually exclusive to CERES_USE_OPENMP and CERES_USE_CXX11_THREADS
-#  endif
+// A macro to mark a function/variable/class as deprecated.
+// We use compiler specific attributes rather than the c++
+// attribute because they do not mix well with each other.
+#if defined(_MSC_VER)
+#define CERES_DEPRECATED_WITH_MSG(message) __declspec(deprecated(message))
+#elif defined(__GNUC__)
+#define CERES_DEPRECATED_WITH_MSG(message) __attribute__((deprecated(message)))
 #else
-#  error One of CERES_USE_OPENMP, CERES_USE_CXX11_THREADS or CERES_NO_THREADS must be defined.
+// In the worst case fall back to c++ attribute.
+#define CERES_DEPRECATED_WITH_MSG(message) [[deprecated(message)]]
 #endif
 
-// CERES_NO_SPARSE should be automatically defined by config.h if Ceres was
-// compiled without any sparse back-end.  Verify that it has not subsequently
-// been inconsistently redefined.
-#if defined(CERES_NO_SPARSE)
-#  if !defined(CERES_NO_SUITESPARSE)
-#    error CERES_NO_SPARSE requires CERES_NO_SUITESPARSE.
-#  endif
-#  if !defined(CERES_NO_CXSPARSE)
-#    error CERES_NO_SPARSE requires CERES_NO_CXSPARSE
-#  endif
-#  if !defined(CERES_NO_ACCELERATE_SPARSE)
-#    error CERES_NO_SPARSE requires CERES_NO_ACCELERATE_SPARSE
-#  endif
-#  if defined(CERES_USE_EIGEN_SPARSE)
-#    error CERES_NO_SPARSE requires !CERES_USE_EIGEN_SPARSE
-#  endif
+#ifndef CERES_GET_FLAG
+#define CERES_GET_FLAG(X) X
 #endif
 
-// A macro to signal which functions and classes are exported when
-// building a DLL with MSVC.
+// Indicates whether C++20 is currently active
+#ifndef CERES_HAS_CPP20
+#if __cplusplus >= 202002L || (defined(_MSVC_LANG) && _MSVC_LANG >= 202002L)
+#define CERES_HAS_CPP20
+#endif  // __cplusplus >= 202002L || (defined(_MSVC_LANG) && _MSVC_LANG >=
+        // 202002L)
+#endif  // !defined(CERES_HAS_CPP20)
+
+// Prevents symbols from being substituted by the corresponding macro definition
+// under the same name. For instance, min and max are defined as macros on
+// Windows (unless NOMINMAX is defined) which causes compilation errors when
+// defining or referencing symbols under the same name.
 //
-// Note that the ordering here is important, CERES_BUILDING_SHARED_LIBRARY
-// is only defined locally when Ceres is compiled, it is never exported to
-// users.  However, in order that we do not have to configure config.h
-// separately for building vs installing, if we are using MSVC and building
-// a shared library, then both CERES_BUILDING_SHARED_LIBRARY and
-// CERES_USING_SHARED_LIBRARY will be defined when Ceres is compiled.
-// Hence it is important that the check for CERES_BUILDING_SHARED_LIBRARY
-// happens first.
-#if defined(_MSC_VER) && defined(CERES_BUILDING_SHARED_LIBRARY)
-# define CERES_EXPORT __declspec(dllexport)
-#elif defined(_MSC_VER) && defined(CERES_USING_SHARED_LIBRARY)
-# define CERES_EXPORT __declspec(dllimport)
-#else
-# define CERES_EXPORT
-#endif
+// To be robust in all cases particularly when NOMINMAX cannot be used, use this
+// macro to annotate min/max declarations/definitions. Examples:
+//
+//   int max CERES_PREVENT_MACRO_SUBSTITUTION();
+//   min CERES_PREVENT_MACRO_SUBSTITUTION(a, b);
+//   max CERES_PREVENT_MACRO_SUBSTITUTION(a, b);
+//
+// NOTE: In case the symbols for which the substitution must be prevented are
+// used within another macro, the substitution must be inhibited using parens as
+//
+//   (std::numerical_limits<double>::max)()
+//
+// since the helper macro will not work here. Do not use this technique in
+// general case, because it will prevent argument-dependent lookup (ADL).
+//
+#define CERES_PREVENT_MACRO_SUBSTITUTION  // Yes, it's empty
+
+// CERES_DISABLE_DEPRECATED_WARNING and CERES_RESTORE_DEPRECATED_WARNING allow
+// to temporarily disable deprecation warnings
+#if defined(_MSC_VER)
+#define CERES_DISABLE_DEPRECATED_WARNING \
+  _Pragma("warning(push)") _Pragma("warning(disable : 4996)")
+#define CERES_RESTORE_DEPRECATED_WARNING _Pragma("warning(pop)")
+#else  // defined(_MSC_VER)
+#define CERES_DISABLE_DEPRECATED_WARNING
+#define CERES_RESTORE_DEPRECATED_WARNING
+#endif  // defined(_MSC_VER)
 
 #endif  // CERES_PUBLIC_INTERNAL_PORT_H_

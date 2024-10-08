@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2018 Google Inc. All rights reserved.
+// Copyright 2023 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -28,11 +28,6 @@
 //
 // Author: vitus@google.com (Michael Vitus)
 
-// This include must come before any #ifndef check on Ceres compile options.
-#include "ceres/internal/port.h"
-
-#ifdef CERES_USE_CXX11_THREADS
-
 #include "ceres/thread_pool.h"
 
 #include <chrono>
@@ -40,12 +35,12 @@
 #include <mutex>
 #include <thread>
 
+#include "ceres/internal/config.h"
+#include "glog/logging.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
-#include "glog/logging.h"
 
-namespace ceres {
-namespace internal {
+namespace ceres::internal {
 
 // Adds a number of tasks to the thread pool and ensures they all run.
 TEST(ThreadPool, AddTask) {
@@ -59,14 +54,14 @@ TEST(ThreadPool, AddTask) {
 
     for (int i = 0; i < num_tasks; ++i) {
       thread_pool.AddTask([&]() {
-          std::lock_guard<std::mutex> lock(mutex);
-          ++value;
-          condition.notify_all();
-        });
+        std::lock_guard<std::mutex> lock(mutex);
+        ++value;
+        condition.notify_all();
+      });
     }
 
     std::unique_lock<std::mutex> lock(mutex);
-    condition.wait(lock, [&](){return value == num_tasks;});
+    condition.wait(lock, [&]() { return value == num_tasks; });
   }
 
   EXPECT_EQ(num_tasks, value);
@@ -116,7 +111,7 @@ TEST(ThreadPool, ResizingDuringExecution) {
 
     // Unlock the mutex to unblock all of the threads and wait until all of the
     // tasks are completed.
-    condition.wait(lock, [&](){return value == num_tasks;});
+    condition.wait(lock, [&]() { return value == num_tasks; });
   }
 
   EXPECT_EQ(num_tasks, value);
@@ -194,7 +189,4 @@ TEST(ThreadPool, Resize) {
   EXPECT_EQ(2, thread_pool.Size());
 }
 
-}  // namespace internal
-}  // namespace ceres
-
-#endif // CERES_USE_CXX11_THREADS
+}  // namespace ceres::internal

@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2015 Google Inc. All rights reserved.
+// Copyright 2023 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -33,6 +33,8 @@
 #include <cmath>
 #include <limits>
 #include <memory>
+#include <string>
+#include <utility>
 #include <vector>
 
 #include "ceres/internal/integer_sequence_algorithm.h"
@@ -44,9 +46,6 @@
 
 namespace ceres {
 namespace internal {
-
-using std::string;
-using std::vector;
 
 // A cost function that simply returns its argument.
 class UnaryIdentityCostFunction : public SizedCostFunction<1, 1> {
@@ -69,7 +68,7 @@ class MockCostFunctionBase : public SizedCostFunction<kNumResiduals, Ns...> {
   bool Evaluate(double const* const* parameters,
                 double* residuals,
                 double** jacobians) const final {
-    const int kNumParameters = Sum<integer_sequence<int, Ns...>>::Value;
+    constexpr int kNumParameters = (Ns + ... + 0);
 
     for (int i = 0; i < kNumResiduals; ++i) {
       residuals[i] = kNumResiduals + kNumParameters;
@@ -95,10 +94,11 @@ TEST(Program, RemoveFixedBlocksNothingConstant) {
   problem.AddResidualBlock(new BinaryCostFunction(), nullptr, &x, &y);
   problem.AddResidualBlock(new TernaryCostFunction(), nullptr, &x, &y, &z);
 
-  vector<double*> removed_parameter_blocks;
+  std::vector<double*> removed_parameter_blocks;
   double fixed_cost = 0.0;
-  string message;
-  std::unique_ptr<Program> reduced_program(problem.program().CreateReducedProgram(
+  std::string message;
+  std::unique_ptr<Program> reduced_program(
+      problem.program().CreateReducedProgram(
           &removed_parameter_blocks, &fixed_cost, &message));
 
   EXPECT_EQ(reduced_program->NumParameterBlocks(), 3);
@@ -115,9 +115,9 @@ TEST(Program, RemoveFixedBlocksAllParameterBlocksConstant) {
   problem.AddResidualBlock(new UnaryCostFunction(), nullptr, &x);
   problem.SetParameterBlockConstant(&x);
 
-  vector<double*> removed_parameter_blocks;
+  std::vector<double*> removed_parameter_blocks;
   double fixed_cost = 0.0;
-  string message;
+  std::string message;
   std::unique_ptr<Program> reduced_program(
       problem.program().CreateReducedProgram(
           &removed_parameter_blocks, &fixed_cost, &message));
@@ -129,7 +129,6 @@ TEST(Program, RemoveFixedBlocksAllParameterBlocksConstant) {
   EXPECT_EQ(fixed_cost, 9.0);
 }
 
-
 TEST(Program, RemoveFixedBlocksNoResidualBlocks) {
   ProblemImpl problem;
   double x;
@@ -140,9 +139,9 @@ TEST(Program, RemoveFixedBlocksNoResidualBlocks) {
   problem.AddParameterBlock(&y, 1);
   problem.AddParameterBlock(&z, 1);
 
-  vector<double*> removed_parameter_blocks;
+  std::vector<double*> removed_parameter_blocks;
   double fixed_cost = 0.0;
-  string message;
+  std::string message;
   std::unique_ptr<Program> reduced_program(
       problem.program().CreateReducedProgram(
           &removed_parameter_blocks, &fixed_cost, &message));
@@ -166,9 +165,9 @@ TEST(Program, RemoveFixedBlocksOneParameterBlockConstant) {
   problem.AddResidualBlock(new BinaryCostFunction(), nullptr, &x, &y);
   problem.SetParameterBlockConstant(&x);
 
-  vector<double*> removed_parameter_blocks;
+  std::vector<double*> removed_parameter_blocks;
   double fixed_cost = 0.0;
-  string message;
+  std::string message;
   std::unique_ptr<Program> reduced_program(
       problem.program().CreateReducedProgram(
           &removed_parameter_blocks, &fixed_cost, &message));
@@ -190,9 +189,9 @@ TEST(Program, RemoveFixedBlocksNumEliminateBlocks) {
   problem.AddResidualBlock(new BinaryCostFunction(), nullptr, &x, &y);
   problem.SetParameterBlockConstant(&x);
 
-  vector<double*> removed_parameter_blocks;
+  std::vector<double*> removed_parameter_blocks;
   double fixed_cost = 0.0;
-  string message;
+  std::string message;
   std::unique_ptr<Program> reduced_program(
       problem.program().CreateReducedProgram(
           &removed_parameter_blocks, &fixed_cost, &message));
@@ -214,21 +213,17 @@ TEST(Program, RemoveFixedBlocksFixedCost) {
   problem.AddResidualBlock(new BinaryCostFunction(), nullptr, &x, &y);
   problem.SetParameterBlockConstant(&x);
 
-  ResidualBlock *expected_removed_block =
+  ResidualBlock* expected_removed_block =
       problem.program().residual_blocks()[0];
   std::unique_ptr<double[]> scratch(
       new double[expected_removed_block->NumScratchDoublesForEvaluate()]);
   double expected_fixed_cost;
-  expected_removed_block->Evaluate(true,
-                                   &expected_fixed_cost,
-                                   nullptr,
-                                   nullptr,
-                                   scratch.get());
+  expected_removed_block->Evaluate(
+      true, &expected_fixed_cost, nullptr, nullptr, scratch.get());
 
-
-  vector<double*> removed_parameter_blocks;
+  std::vector<double*> removed_parameter_blocks;
   double fixed_cost = 0.0;
-  string message;
+  std::string message;
   std::unique_ptr<Program> reduced_program(
       problem.program().CreateReducedProgram(
           &removed_parameter_blocks, &fixed_cost, &message));
@@ -322,9 +317,7 @@ TEST_P(BlockJacobianTest, CreateJacobianBlockSparsityTranspose) {
   EXPECT_EQ((expected_dense_jacobian - actual_dense_jacobian).norm(), 0.0);
 }
 
-INSTANTIATE_TEST_SUITE_P(AllColumns,
-                         BlockJacobianTest,
-                         ::testing::Range(0, 7));
+INSTANTIATE_TEST_SUITE_P(AllColumns, BlockJacobianTest, ::testing::Range(0, 7));
 
 template <int kNumResiduals, int kNumParameterBlocks>
 class NumParameterBlocksCostFunction : public CostFunction {
@@ -334,9 +327,6 @@ class NumParameterBlocksCostFunction : public CostFunction {
     for (int i = 0; i < kNumParameterBlocks; ++i) {
       mutable_parameter_block_sizes()->push_back(1);
     }
-  }
-
-  virtual ~NumParameterBlocksCostFunction() {
   }
 
   bool Evaluate(double const* const* parameters,
@@ -355,7 +345,7 @@ TEST(Program, ReallocationInCreateJacobianBlockSparsityTranspose) {
   ProblemImpl problem;
   double x[20];
 
-  vector<double*> parameter_blocks;
+  std::vector<double*> parameter_blocks;
   for (int i = 0; i < 20; ++i) {
     problem.AddParameterBlock(x + i, 1);
     parameter_blocks.push_back(x + i);
@@ -400,10 +390,10 @@ TEST(Program, ProblemHasNanParameterBlocks) {
   x[0] = 1.0;
   x[1] = std::numeric_limits<double>::quiet_NaN();
   problem.AddResidualBlock(new MockCostFunctionBase<1, 2>(), nullptr, x);
-  string error;
+  std::string error;
   EXPECT_FALSE(problem.program().ParameterBlocksAreFinite(&error));
-  EXPECT_NE(error.find("has at least one invalid value"),
-            string::npos) << error;
+  EXPECT_NE(error.find("has at least one invalid value"), std::string::npos)
+      << error;
 }
 
 TEST(Program, InfeasibleParameterBlock) {
@@ -412,9 +402,9 @@ TEST(Program, InfeasibleParameterBlock) {
   problem.AddResidualBlock(new MockCostFunctionBase<1, 2>(), nullptr, x);
   problem.SetParameterLowerBound(x, 0, 2.0);
   problem.SetParameterUpperBound(x, 0, 1.0);
-  string error;
+  std::string error;
   EXPECT_FALSE(problem.program().IsFeasible(&error));
-  EXPECT_NE(error.find("infeasible bound"), string::npos) << error;
+  EXPECT_NE(error.find("infeasible bound"), std::string::npos) << error;
 }
 
 TEST(Program, InfeasibleConstantParameterBlock) {
@@ -424,9 +414,9 @@ TEST(Program, InfeasibleConstantParameterBlock) {
   problem.SetParameterLowerBound(x, 0, 1.0);
   problem.SetParameterUpperBound(x, 0, 2.0);
   problem.SetParameterBlockConstant(x);
-  string error;
+  std::string error;
   EXPECT_FALSE(problem.program().IsFeasible(&error));
-  EXPECT_NE(error.find("infeasible value"), string::npos) << error;
+  EXPECT_NE(error.find("infeasible value"), std::string::npos) << error;
 }
 
 }  // namespace internal

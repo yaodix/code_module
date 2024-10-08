@@ -37,7 +37,7 @@ functor is straightforward and will look as follows:
    template <typename T> T TemplatedComputeDistortion(const T r2) {
      const double k1 = 0.0082;
      const double k2 = 0.000023;
-     return 1.0 + k1 * y2 + k2 * r2 * r2;
+     return 1.0 + k1 * r2 + k2 * r2 * r2;
    }
 
    struct Affine2DWithDistortion {
@@ -148,7 +148,7 @@ A function that returns its value and derivative
 ------------------------------------------------
 
 Now suppose we are given a function :code:`ComputeDistortionValue`
-thatis able to compute its value and optionally its Jacobian on demand
+that is able to compute its value and optionally its Jacobian on demand
 and has the following signature:
 
 .. code-block:: c++
@@ -181,7 +181,7 @@ The resulting code will look as follows:
                            double* residuals,
                            double** jacobians) const {
        if (!jacobians) {
-         ComputeDistortionValueAndJacobian(parameters[0][0], residuals, NULL);
+         ComputeDistortionValueAndJacobian(parameters[0][0], residuals, nullptr);
        } else {
          ComputeDistortionValueAndJacobian(parameters[0][0], residuals, jacobians[0]);
        }

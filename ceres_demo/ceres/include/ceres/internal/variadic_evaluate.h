@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2015 Google Inc. All rights reserved.
+// Copyright 2023 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -33,22 +33,23 @@
 #ifndef CERES_PUBLIC_INTERNAL_VARIADIC_EVALUATE_H_
 #define CERES_PUBLIC_INTERNAL_VARIADIC_EVALUATE_H_
 
-#include <stddef.h>
-
+#include <cstddef>
 #include <type_traits>
+#include <utility>
 
 #include "ceres/cost_function.h"
 #include "ceres/internal/parameter_dims.h"
 
-namespace ceres {
-namespace internal {
+namespace ceres::internal {
 
 // For fixed size cost functors
 template <typename Functor, typename T, int... Indices>
-inline bool VariadicEvaluateImpl(const Functor& functor, T const* const* input,
-                                 T* output, std::false_type /*is_dynamic*/,
-                                 integer_sequence<int, Indices...>) {
-  static_assert(sizeof...(Indices),
+inline bool VariadicEvaluateImpl(const Functor& functor,
+                                 T const* const* input,
+                                 T* output,
+                                 std::false_type /*is_dynamic*/,
+                                 std::integer_sequence<int, Indices...>) {
+  static_assert(sizeof...(Indices) > 0,
                 "Invalid number of parameter blocks. At least one parameter "
                 "block must be specified.");
   return functor(input[Indices]..., output);
@@ -56,26 +57,31 @@ inline bool VariadicEvaluateImpl(const Functor& functor, T const* const* input,
 
 // For dynamic sized cost functors
 template <typename Functor, typename T>
-inline bool VariadicEvaluateImpl(const Functor& functor, T const* const* input,
-                                 T* output, std::true_type /*is_dynamic*/,
-                                 integer_sequence<int>) {
+inline bool VariadicEvaluateImpl(const Functor& functor,
+                                 T const* const* input,
+                                 T* output,
+                                 std::true_type /*is_dynamic*/,
+                                 std::integer_sequence<int>) {
   return functor(input, output);
 }
 
 // For ceres cost functors (not ceres::CostFunction)
 template <typename ParameterDims, typename Functor, typename T>
-inline bool VariadicEvaluateImpl(const Functor& functor, T const* const* input,
-                                 T* output, const void* /* NOT USED */) {
+inline bool VariadicEvaluateImpl(const Functor& functor,
+                                 T const* const* input,
+                                 T* output,
+                                 const void* /* NOT USED */) {
   using ParameterBlockIndices =
-      make_integer_sequence<int, ParameterDims::kNumParameterBlocks>;
+      std::make_integer_sequence<int, ParameterDims::kNumParameterBlocks>;
   using IsDynamic = std::integral_constant<bool, ParameterDims::kIsDynamic>;
-  return VariadicEvaluateImpl(functor, input, output, IsDynamic(),
-                              ParameterBlockIndices());
+  return VariadicEvaluateImpl(
+      functor, input, output, IsDynamic(), ParameterBlockIndices());
 }
 
 // For ceres::CostFunction
 template <typename ParameterDims, typename Functor, typename T>
-inline bool VariadicEvaluateImpl(const Functor& functor, T const* const* input,
+inline bool VariadicEvaluateImpl(const Functor& functor,
+                                 T const* const* input,
                                  T* output,
                                  const CostFunction* /* NOT USED */) {
   return functor.Evaluate(input, output, nullptr);
@@ -94,12 +100,35 @@ inline bool VariadicEvaluateImpl(const Functor& functor, T const* const* input,
 // blocks. The signature of the functor must have the following signature
 // 'bool()(const T* i_1, const T* i_2, ... const T* i_n, T* output)'.
 template <typename ParameterDims, typename Functor, typename T>
-inline bool VariadicEvaluate(const Functor& functor, T const* const* input,
+inline bool VariadicEvaluate(const Functor& functor,
+                             T const* const* input,
                              T* output) {
   return VariadicEvaluateImpl<ParameterDims>(functor, input, output, &functor);
 }
 
-}  // namespace internal
-}  // namespace ceres
+// When differentiating dynamically sized CostFunctions, VariadicEvaluate
+// expects a functor with the signature:
+//
+// bool operator()(double const* const* parameters, double* cost) const
+//
+// However for NumericDiffFirstOrderFunction, the functor has the signature
+//
+// bool operator()(double const* parameters, double* cost) const
+//
+// This thin wrapper adapts the latter to the former.
+template <typename Functor>
+class FirstOrderFunctorAdapter {
+ public:
+  explicit FirstOrderFunctorAdapter(const Functor& functor)
+      : functor_(functor) {}
+  bool operator()(double const* const* parameters, double* cost) const {
+    return functor_(*parameters, cost);
+  }
+
+ private:
+  const Functor& functor_;
+};
+
+}  // namespace ceres::internal
 
 #endif  // CERES_PUBLIC_INTERNAL_VARIADIC_EVALUATE_H_

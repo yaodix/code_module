@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2015 Google Inc. All rights reserved.
+// Copyright 2023 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -45,9 +45,10 @@
 #include <vector>
 
 #include "ceres/graph.h"
+#include "ceres/internal/disable_warnings.h"
+#include "ceres/internal/export.h"
 
-namespace ceres {
-namespace internal {
+namespace ceres::internal {
 
 struct CanonicalViewsClusteringOptions;
 
@@ -94,13 +95,13 @@ struct CanonicalViewsClusteringOptions;
 // It is possible depending on the configuration of the clustering
 // algorithm that some of the vertices may not be assigned to any
 // cluster. In this case they are assigned to a cluster with id = -1;
-void ComputeCanonicalViewsClustering(
+CERES_NO_EXPORT void ComputeCanonicalViewsClustering(
     const CanonicalViewsClusteringOptions& options,
     const WeightedGraph<int>& graph,
     std::vector<int>* centers,
     std::unordered_map<int, int>* membership);
 
-struct CanonicalViewsClusteringOptions {
+struct CERES_NO_EXPORT CanonicalViewsClusteringOptions {
   // The minimum number of canonical views to compute.
   int min_views = 3;
 
@@ -118,7 +119,8 @@ struct CanonicalViewsClusteringOptions {
   double view_score_weight = 0.0;
 };
 
-}  // namespace internal
-}  // namespace ceres
+}  // namespace ceres::internal
+
+#include "ceres/internal/reenable_warnings.h"
 
 #endif  // CERES_INTERNAL_CANONICAL_VIEWS_CLUSTERING_H_

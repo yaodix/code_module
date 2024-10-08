@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2018 Google Inc. All rights reserved.
+// Copyright 2023 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -32,7 +32,7 @@
 #define CERES_INTERNAL_ACCELERATE_SPARSE_H_
 
 // This include must come before any #ifndef check on Ceres compile options.
-#include "ceres/internal/port.h"
+#include "ceres/internal/config.h"
 
 #ifndef CERES_NO_ACCELERATE_SPARSE
 
@@ -40,9 +40,9 @@
 #include <string>
 #include <vector>
 
+#include "Accelerate.h"
 #include "ceres/linear_solver.h"
 #include "ceres/sparse_cholesky.h"
-#include "Accelerate.h"
 
 namespace ceres {
 namespace internal {
@@ -50,34 +50,35 @@ namespace internal {
 class CompressedRowSparseMatrix;
 class TripletSparseMatrix;
 
-template<typename Scalar>
-struct SparseTypesTrait {
-};
+template <typename Scalar>
+struct SparseTypesTrait {};
 
-template<>
+template <>
 struct SparseTypesTrait<double> {
-  typedef DenseVector_Double DenseVector;
-  typedef SparseMatrix_Double SparseMatrix;
-  typedef SparseOpaqueSymbolicFactorization SymbolicFactorization;
-  typedef SparseOpaqueFactorization_Double NumericFactorization;
+  using DenseVector = DenseVector_Double;
+  using SparseMatrix = SparseMatrix_Double;
+  using SymbolicFactorization = SparseOpaqueSymbolicFactorization;
+  using NumericFactorization = SparseOpaqueFactorization_Double;
 };
 
-template<>
+template <>
 struct SparseTypesTrait<float> {
-  typedef DenseVector_Float DenseVector;
-  typedef SparseMatrix_Float SparseMatrix;
-  typedef SparseOpaqueSymbolicFactorization SymbolicFactorization;
-  typedef SparseOpaqueFactorization_Float NumericFactorization;
+  using DenseVector = DenseVector_Float;
+  using SparseMatrix = SparseMatrix_Float;
+  using SymbolicFactorization = SparseOpaqueSymbolicFactorization;
+  using NumericFactorization = SparseOpaqueFactorization_Float;
 };
 
-template<typename Scalar>
+template <typename Scalar>
 class AccelerateSparse {
  public:
   using DenseVector = typename SparseTypesTrait<Scalar>::DenseVector;
   // Use ASSparseMatrix to avoid collision with ceres::internal::SparseMatrix.
   using ASSparseMatrix = typename SparseTypesTrait<Scalar>::SparseMatrix;
-  using SymbolicFactorization = typename SparseTypesTrait<Scalar>::SymbolicFactorization;
-  using NumericFactorization = typename SparseTypesTrait<Scalar>::NumericFactorization;
+  using SymbolicFactorization =
+      typename SparseTypesTrait<Scalar>::SymbolicFactorization;
+  using NumericFactorization =
+      typename SparseTypesTrait<Scalar>::NumericFactorization;
 
   // Solves a linear system given its symbolic (reference counted within
   // NumericFactorization) and numeric factorization.
@@ -90,7 +91,8 @@ class AccelerateSparse {
   //       objects internally).
   ASSparseMatrix CreateSparseMatrixTransposeView(CompressedRowSparseMatrix* A);
   // Computes a symbolic factorisation of A that can be used in Solve().
-  SymbolicFactorization AnalyzeCholesky(ASSparseMatrix* A);
+  SymbolicFactorization AnalyzeCholesky(OrderingType ordering_type,
+                                        ASSparseMatrix* A);
   // Compute the numeric Cholesky factorization of A, given its
   // symbolic factorization.
   NumericFactorization Cholesky(ASSparseMatrix* A,
@@ -109,8 +111,8 @@ class AccelerateSparse {
 
 // An implementation of SparseCholesky interface using Apple's Accelerate
 // framework.
-template<typename Scalar>
-class AppleAccelerateCholesky : public SparseCholesky {
+template <typename Scalar>
+class AppleAccelerateCholesky final : public SparseCholesky {
  public:
   // Factory
   static std::unique_ptr<SparseCholesky> Create(OrderingType ordering_type);
@@ -122,7 +124,7 @@ class AppleAccelerateCholesky : public SparseCholesky {
                                         std::string* message) final;
   LinearSolverTerminationType Solve(const double* rhs,
                                     double* solution,
-                                    std::string* message) final ;
+                                    std::string* message) final;
 
  private:
   AppleAccelerateCholesky(const OrderingType ordering_type);
@@ -132,15 +134,15 @@ class AppleAccelerateCholesky : public SparseCholesky {
   const OrderingType ordering_type_;
   AccelerateSparse<Scalar> as_;
   std::unique_ptr<typename AccelerateSparse<Scalar>::SymbolicFactorization>
-  symbolic_factor_;
+      symbolic_factor_;
   std::unique_ptr<typename AccelerateSparse<Scalar>::NumericFactorization>
-  numeric_factor_;
+      numeric_factor_;
   // Copy of rhs/solution if Scalar != double (necessitating a copy).
   Eigen::Matrix<Scalar, Eigen::Dynamic, 1> scalar_rhs_and_solution_;
 };
 
-}
-}
+}  // namespace internal
+}  // namespace ceres
 
 #endif  // CERES_NO_ACCELERATE_SPARSE
 

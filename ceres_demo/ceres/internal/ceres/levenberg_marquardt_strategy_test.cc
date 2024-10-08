@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2015 Google Inc. All rights reserved.
+// Copyright 2023 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -28,9 +28,11 @@
 //
 // Author: sameeragarwal@google.com (Sameer Agarwal)
 
-#include <memory>
-#include "ceres/internal/eigen.h"
 #include "ceres/levenberg_marquardt_strategy.h"
+
+#include <memory>
+
+#include "ceres/internal/eigen.h"
 #include "ceres/linear_solver.h"
 #include "ceres/trust_region_strategy.h"
 #include "glog/logging.h"
@@ -38,11 +40,11 @@
 #include "gmock/mock-log.h"
 #include "gtest/gtest.h"
 
+using testing::_;
 using testing::AllOf;
 using testing::AnyNumber;
 using testing::HasSubstr;
 using testing::ScopedMockLog;
-using testing::_;
 
 namespace ceres {
 namespace internal {
@@ -54,11 +56,7 @@ const double kTolerance = 1e-16;
 class RegularizationCheckingLinearSolver : public DenseSparseMatrixSolver {
  public:
   RegularizationCheckingLinearSolver(const int num_cols, const double* diagonal)
-      : num_cols_(num_cols),
-        diagonal_(diagonal) {
-  }
-
-  virtual ~RegularizationCheckingLinearSolver() {}
+      : num_cols_(num_cols), diagonal_(diagonal) {}
 
  private:
   LinearSolver::Summary SolveImpl(
@@ -71,7 +69,7 @@ class RegularizationCheckingLinearSolver : public DenseSparseMatrixSolver {
       EXPECT_NEAR(per_solve_options.D[i], diagonal_[i], kTolerance)
           << i << " " << per_solve_options.D[i] << " " << diagonal_[i];
     }
-    return LinearSolver::Summary();
+    return {};
   }
 
   const int num_cols_;
@@ -87,7 +85,7 @@ TEST(LevenbergMarquardtStrategy, AcceptRejectStepRadiusScaling) {
 
   // We need a non-null pointer here, so anything should do.
   std::unique_ptr<LinearSolver> linear_solver(
-      new RegularizationCheckingLinearSolver(0, NULL));
+      new RegularizationCheckingLinearSolver(0, nullptr));
   options.linear_solver = linear_solver.get();
 
   LevenbergMarquardtStrategy lms(options);
@@ -132,8 +130,8 @@ TEST(LevenbergMarquardtStrategy, CorrectDiagonalToLinearSolver) {
   diagonal[0] = options.min_lm_diagonal;
   diagonal[1] = 2.0;
   diagonal[2] = options.max_lm_diagonal;
-  for (int i = 0; i < 3; ++i) {
-    diagonal[i] = sqrt(diagonal[i] / options.initial_radius);
+  for (double& diagonal_entry : diagonal) {
+    diagonal_entry = sqrt(diagonal_entry / options.initial_radius);
   }
 
   RegularizationCheckingLinearSolver linear_solver(3, diagonal);
@@ -149,19 +147,19 @@ TEST(LevenbergMarquardtStrategy, CorrectDiagonalToLinearSolver) {
     // are versions of glog which are not in the google namespace.
     using namespace google;
 
-#if defined(_MSC_VER)
+#if defined(GLOG_NO_ABBREVIATED_SEVERITIES)
     // Use GLOG_WARNING to support MSVC if GLOG_NO_ABBREVIATED_SEVERITIES
     // is defined.
-    EXPECT_CALL(log, Log(GLOG_WARNING, _,
-                         HasSubstr("Failed to compute a step")));
+    EXPECT_CALL(log,
+                Log(GLOG_WARNING, _, HasSubstr("Failed to compute a step")));
 #else
-    EXPECT_CALL(log, Log(google::WARNING, _,
-                         HasSubstr("Failed to compute a step")));
+    EXPECT_CALL(log,
+                Log(google::WARNING, _, HasSubstr("Failed to compute a step")));
 #endif
 
     TrustRegionStrategy::Summary summary =
         lms.ComputeStep(pso, &dsm, &residual, x);
-    EXPECT_EQ(summary.termination_type, LINEAR_SOLVER_FAILURE);
+    EXPECT_EQ(summary.termination_type, LinearSolverTerminationType::FAILURE);
   }
 }
 

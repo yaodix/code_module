@@ -35,6 +35,8 @@
 #include <Eigen/Core>
 #include <cmath>
 
+#include "ceres/constants.h"
+
 namespace ceres {
 
 // The brdf is based on:
@@ -45,17 +47,15 @@ namespace ceres {
 // https://github.com/wdas/brdf/blob/master/src/brdfs/disney.brdf
 struct Brdf {
  public:
-  Brdf() {}
-
   template <typename T>
-  bool operator()(const T* const material,
-                  const T* const c_ptr,
-                  const T* const n_ptr,
-                  const T* const v_ptr,
-                  const T* const l_ptr,
-                  const T* const x_ptr,
-                  const T* const y_ptr,
-                  T* residual) const {
+  inline bool operator()(const T* const material,
+                         const T* const c_ptr,
+                         const T* const n_ptr,
+                         const T* const v_ptr,
+                         const T* const l_ptr,
+                         const T* const x_ptr,
+                         const T* const y_ptr,
+                         T* residual) const {
     using Vec3 = Eigen::Matrix<T, 3, 1>;
 
     T metallic = material[0];
@@ -141,7 +141,7 @@ struct Brdf {
     const T gr = cggxn_dot_l * cggxn_dot_v;
 
     const Vec3 result_no_cosine =
-        (T(1.0 / M_PI) * Lerp(fd, ss, subsurface) * c + f_sheen) *
+        (T(1.0 / constants::pi) * Lerp(fd, ss, subsurface) * c + f_sheen) *
             (T(1) - metallic) +
         gs * fs * ds +
         Vec3(T(0.25), T(0.25), T(0.25)) * clearcoat * gr * fr * dr;
@@ -154,19 +154,19 @@ struct Brdf {
   }
 
   template <typename T>
-  T SchlickFresnel(const T& u) const {
+  inline T SchlickFresnel(const T& u) const {
     T m = T(1) - u;
     const T m2 = m * m;
     return m2 * m2 * m;  // (1-u)^5
   }
 
   template <typename T>
-  T Aspect(const T& anisotropic) const {
+  inline T Aspect(const T& anisotropic) const {
     return T(sqrt(T(1) - anisotropic * T(0.9)));
   }
 
   template <typename T>
-  T SmithG_GGX(const T& n_dot_v, const T& alpha_g) const {
+  inline T SmithG_GGX(const T& n_dot_v, const T& alpha_g) const {
     const T a = alpha_g * alpha_g;
     const T b = n_dot_v * n_dot_v;
     return T(1) / (n_dot_v + T(sqrt(a + b - a * b)));
@@ -175,26 +175,26 @@ struct Brdf {
   // Generalized-Trowbridge-Reitz (GTR) Microfacet Distribution
   // See paper, Appendix B
   template <typename T>
-  T GTR1(const T& n_dot_h, const T& a) const {
+  inline T GTR1(const T& n_dot_h, const T& a) const {
     T result = T(0);
 
     if (a >= T(1)) {
-      result = T(1 / M_PI);
+      result = T(1 / constants::pi);
     } else {
       const T a2 = a * a;
       const T t = T(1) + (a2 - T(1)) * n_dot_h * n_dot_h;
-      result = (a2 - T(1)) / (T(M_PI) * T(log(a2) * t));
+      result = (a2 - T(1)) / (T(constants::pi) * T(log(a2) * t));
     }
     return result;
   }
 
   template <typename T>
-  T GTR2Aniso(const T& n_dot_h,
-              const T& h_dot_x,
-              const T& h_dot_y,
-              const T& ax,
-              const T& ay) const {
-    return T(1) / (T(M_PI) * ax * ay *
+  inline T GTR2Aniso(const T& n_dot_h,
+                     const T& h_dot_x,
+                     const T& h_dot_y,
+                     const T& ax,
+                     const T& ay) const {
+    return T(1) / (T(constants::pi) * ax * ay *
                    Square(Square(h_dot_x / ax) + Square(h_dot_y / ay) +
                           n_dot_h * n_dot_h));
   }
@@ -205,9 +205,10 @@ struct Brdf {
   }
 
   template <typename Derived1, typename Derived2>
-  typename Derived1::PlainObject Lerp(const Eigen::MatrixBase<Derived1>& a,
-                                      const Eigen::MatrixBase<Derived2>& b,
-                                      typename Derived1::Scalar alpha) const {
+  inline typename Derived1::PlainObject Lerp(
+      const Eigen::MatrixBase<Derived1>& a,
+      const Eigen::MatrixBase<Derived2>& b,
+      typename Derived1::Scalar alpha) const {
     return (typename Derived1::Scalar(1) - alpha) * a + alpha * b;
   }
 

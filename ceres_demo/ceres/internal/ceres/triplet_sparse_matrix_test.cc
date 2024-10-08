@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2015 Google Inc. All rights reserved.
+// Copyright 2023 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -31,10 +31,11 @@
 #include "ceres/triplet_sparse_matrix.h"
 
 #include <memory>
+
+#include "ceres/crs_matrix.h"
 #include "gtest/gtest.h"
 
-namespace ceres {
-namespace internal {
+namespace ceres::internal {
 
 TEST(TripletSparseMatrix, DefaultConstructorReturnsEmptyObject) {
   TripletSparseMatrix m;
@@ -309,15 +310,14 @@ TEST(TripletSparseMatrix, AppendCols) {
 
 TEST(TripletSparseMatrix, CreateDiagonalMatrix) {
   std::unique_ptr<double[]> values(new double[10]);
-  for (int i = 0; i < 10; ++i)
-    values[i] = i;
+  for (int i = 0; i < 10; ++i) values[i] = i;
 
   std::unique_ptr<TripletSparseMatrix> m(
       TripletSparseMatrix::CreateSparseDiagonalMatrix(values.get(), 10));
   EXPECT_EQ(m->num_rows(), 10);
   EXPECT_EQ(m->num_cols(), 10);
   ASSERT_EQ(m->num_nonzeros(), 10);
-  for (int i = 0; i < 10 ; ++i) {
+  for (int i = 0; i < 10; ++i) {
     EXPECT_EQ(m->rows()[i], i);
     EXPECT_EQ(m->cols()[i], i);
     EXPECT_EQ(m->values()[i], i);
@@ -331,7 +331,7 @@ TEST(TripletSparseMatrix, Resize) {
     for (int j = 0; j < 20; ++j) {
       m.mutable_rows()[nnz] = i;
       m.mutable_cols()[nnz] = j;
-      m.mutable_values()[nnz++] = i+j;
+      m.mutable_values()[nnz++] = i + j;
     }
   }
   m.set_num_nonzeros(nnz);
@@ -344,5 +344,42 @@ TEST(TripletSparseMatrix, Resize) {
   }
 }
 
-}  // namespace internal
-}  // namespace ceres
+TEST(TripletSparseMatrix, ToCRSMatrix) {
+  // Test matrix:
+  // [1, 2, 0, 5, 6, 0,
+  //  3, 4, 0, 7, 8, 0,
+  //  0, 0, 9, 0, 0, 0]
+  TripletSparseMatrix m(3,
+                        6,
+                        {0, 0, 0, 0, 1, 1, 1, 1, 2},
+                        {0, 1, 3, 4, 0, 1, 3, 4, 2},
+                        {1, 2, 3, 4, 5, 6, 7, 8, 9});
+  CRSMatrix m_crs;
+  m.ToCRSMatrix(&m_crs);
+  EXPECT_EQ(m_crs.num_rows, 3);
+  EXPECT_EQ(m_crs.num_cols, 6);
+
+  EXPECT_EQ(m_crs.rows.size(), 4);
+  EXPECT_EQ(m_crs.rows[0], 0);
+  EXPECT_EQ(m_crs.rows[1], 4);
+  EXPECT_EQ(m_crs.rows[2], 8);
+  EXPECT_EQ(m_crs.rows[3], 9);
+
+  EXPECT_EQ(m_crs.cols.size(), 9);
+  EXPECT_EQ(m_crs.cols[0], 0);
+  EXPECT_EQ(m_crs.cols[1], 1);
+  EXPECT_EQ(m_crs.cols[2], 3);
+  EXPECT_EQ(m_crs.cols[3], 4);
+  EXPECT_EQ(m_crs.cols[4], 0);
+  EXPECT_EQ(m_crs.cols[5], 1);
+  EXPECT_EQ(m_crs.cols[6], 3);
+  EXPECT_EQ(m_crs.cols[7], 4);
+  EXPECT_EQ(m_crs.cols[8], 2);
+
+  EXPECT_EQ(m_crs.values.size(), 9);
+  for (int i = 0; i < 9; ++i) {
+    EXPECT_EQ(m_crs.values[i], i + 1);
+  }
+}
+
+}  // namespace ceres::internal

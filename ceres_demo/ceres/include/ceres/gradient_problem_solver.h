@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2019 Google Inc. All rights reserved.
+// Copyright 2023 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -36,6 +36,7 @@
 #include <vector>
 
 #include "ceres/internal/disable_warnings.h"
+#include "ceres/internal/export.h"
 #include "ceres/internal/port.h"
 #include "ceres/iteration_callback.h"
 #include "ceres/types.h"
@@ -62,7 +63,8 @@ class CERES_EXPORT GradientProblemSolver {
     // Minimizer options ----------------------------------------
     LineSearchDirectionType line_search_direction_type = LBFGS;
     LineSearchType line_search_type = WOLFE;
-    NonlinearConjugateGradientType nonlinear_conjugate_gradient_type = FLETCHER_REEVES;
+    NonlinearConjugateGradientType nonlinear_conjugate_gradient_type =
+        FLETCHER_REEVES;
 
     // The LBFGS hessian approximation is a low rank approximation to
     // the inverse of the Hessian matrix. The rank of the
@@ -304,7 +306,7 @@ class CERES_EXPORT GradientProblemSolver {
     int num_parameters = -1;
 
     // Dimension of the tangent space of the problem.
-    int num_local_parameters = -1;
+    int num_tangent_parameters = -1;
 
     // Type of line search direction used.
     LineSearchDirectionType line_search_direction_type = LBFGS;

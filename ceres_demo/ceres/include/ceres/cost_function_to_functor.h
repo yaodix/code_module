@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2019 Google Inc. All rights reserved.
+// Copyright 2023 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -89,15 +89,16 @@
 #include <cstdint>
 #include <numeric>
 #include <tuple>
+#include <utility>
 #include <vector>
 
 #include "ceres/cost_function.h"
 #include "ceres/dynamic_cost_function_to_functor.h"
+#include "ceres/internal/export.h"
 #include "ceres/internal/fixed_array.h"
-#include "ceres/internal/integer_sequence.h"
 #include "ceres/internal/parameter_dims.h"
-#include "ceres/internal/port.h"
 #include "ceres/types.h"
+#include "glog/logging.h"
 
 namespace ceres {
 
@@ -119,7 +120,7 @@ class CostFunctionToFunctor {
     if (parameter_block_sizes.size() == num_parameter_blocks) {
       for (int block = 0; block < num_parameter_blocks; ++block) {
         CHECK_EQ(ParameterDims::GetDim(block), parameter_block_sizes[block])
-            << "Parameter block size missmatch. The specified static parameter "
+            << "Parameter block size mismatch. The specified static parameter "
                "block dimension does not match the one from the cost function.";
       }
     }
@@ -144,8 +145,7 @@ class CostFunctionToFunctor {
 
     // Extract parameter block pointers from params.
     using Indices =
-        internal::make_integer_sequence<int,
-                                        ParameterDims::kNumParameterBlocks>;
+        std::make_integer_sequence<int, ParameterDims::kNumParameterBlocks>;
     std::array<const T*, ParameterDims::kNumParameterBlocks> parameter_blocks =
         GetParameterPointers<T>(params, Indices());
 
@@ -158,7 +158,7 @@ class CostFunctionToFunctor {
   template <typename T, typename Tuple, int... Indices>
   static std::array<const T*, ParameterDims::kNumParameterBlocks>
   GetParameterPointers(const Tuple& paramPointers,
-                       internal::integer_sequence<int, Indices...>) {
+                       std::integer_sequence<int, Indices...>) {
     return std::array<const T*, ParameterDims::kNumParameterBlocks>{
         {std::get<Indices>(paramPointers)...}};
   }

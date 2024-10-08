@@ -1,5 +1,5 @@
 // Ceres Solver - A fast non-linear least squares minimizer
-// Copyright 2015 Google Inc. All rights reserved.
+// Copyright 2023 Google Inc. All rights reserved.
 // http://ceres-solver.org/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -31,6 +31,7 @@
 #include "ceres/visibility_based_preconditioner.h"
 
 #include <memory>
+
 #include "Eigen/Dense"
 #include "ceres/block_random_access_dense_matrix.h"
 #include "ceres/block_random_access_sparse_matrix.h"
@@ -46,8 +47,7 @@
 #include "glog/logging.h"
 #include "gtest/gtest.h"
 
-namespace ceres {
-namespace internal {
+namespace ceres::internal {
 
 // TODO(sameeragarwal): Re-enable this test once serialization is
 // working again.
@@ -66,8 +66,8 @@ namespace internal {
 //   void SetUp() {
 //     string input_file = TestFileAbsolutePath("problem-6-1384-000.lsqp");
 
-//     std::unique_ptr<LinearLeastSquaresProblem> problem(
-//         CHECK_NOTNULL(CreateLinearLeastSquaresProblemFromFile(input_file)));
+//     std::unique_ptr<LinearLeastSquaresProblem> problem =
+//     CreateLinearLeastSquaresProblemFromFile(input_file));
 //     A_.reset(down_cast<BlockSparseMatrix*>(problem->A.release()));
 //     b_.reset(problem->b.release());
 //     D_.reset(problem->D.release());
@@ -95,7 +95,8 @@ namespace internal {
 //     // conditioned.
 //     VectorRef(D_.get(), num_cols_).setConstant(10.0);
 
-//     schur_complement_.reset(new BlockRandomAccessDenseMatrix(blocks));
+//     schur_complement_ =
+//     std::make_unique<BlockRandomAccessDenseMatrix>(blocks);
 //     Vector rhs(schur_complement_->num_rows());
 
 //     std::unique_ptr<SchurEliminatorBase> eliminator;
@@ -103,7 +104,7 @@ namespace internal {
 //     eliminator_options.elimination_groups = options_.elimination_groups;
 //     eliminator_options.num_threads = options_.num_threads;
 
-//     eliminator.reset(SchurEliminatorBase::Create(eliminator_options));
+//     eliminator = SchurEliminatorBase::Create(eliminator_options);
 //     eliminator->Init(num_eliminate_blocks_, bs);
 //     eliminator->Eliminate(A_.get(), b_.get(), D_.get(),
 //                           schur_complement_.get(), rhs.data());
@@ -241,8 +242,9 @@ namespace internal {
 
 // TEST_F(VisibilityBasedPreconditionerTest, OneClusterClusterJacobi) {
 //   options_.type = CLUSTER_JACOBI;
-//   preconditioner_.reset(
-//       new VisibilityBasedPreconditioner(*A_->block_structure(), options_));
+//   preconditioner_ =
+//       std::make_unique<VisibilityBasedPreconditioner>(
+//          *A_->block_structure(), options_);
 
 //   // Override the clustering to be a single clustering containing all
 //   // the cameras.
@@ -274,7 +276,7 @@ namespace internal {
 //     y.setZero();
 //     z.setZero();
 //     x[i] = 1.0;
-//     preconditioner_->RightMultiply(x.data(), y.data());
+//     preconditioner_->RightMultiplyAndAccumulate(x.data(), y.data());
 //     z = full_schur_complement
 //         .selfadjointView<Eigen::Upper>()
 //         .llt().solve(x);
@@ -286,8 +288,9 @@ namespace internal {
 
 // TEST_F(VisibilityBasedPreconditionerTest, ClusterJacobi) {
 //   options_.type = CLUSTER_JACOBI;
-//   preconditioner_.reset(
-//       new VisibilityBasedPreconditioner(*A_->block_structure(), options_));
+//   preconditioner_ =
+//   std::make_unique<VisibilityBasedPreconditioner>(*A_->block_structure(),
+//   options_);
 
 //   // Override the clustering to be equal number of cameras.
 //   vector<int>& cluster_membership = *get_mutable_cluster_membership();
@@ -311,8 +314,9 @@ namespace internal {
 
 // TEST_F(VisibilityBasedPreconditionerTest, ClusterTridiagonal) {
 //   options_.type = CLUSTER_TRIDIAGONAL;
-//   preconditioner_.reset(
-//       new VisibilityBasedPreconditioner(*A_->block_structure(), options_));
+//   preconditioner_ =
+//     std::make_unique<VisibilityBasedPreconditioner>(*A_->block_structure(),
+//     options_);
 //   static const int kNumClusters = 3;
 
 //   // Override the clustering to be 3 clusters.
@@ -335,5 +339,4 @@ namespace internal {
 //   EXPECT_TRUE(PreconditionerValuesMatch());
 // }
 
-}  // namespace internal
-}  // namespace ceres
+}  // namespace ceres::internal

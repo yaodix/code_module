@@ -1,8 +1,476 @@
+.. default-domain:: cpp
+
+.. highlight:: c++
+
+.. cpp:namespace:: ceres
+
+
 .. _chapter-version-history:
 
 ===============
 Version History
 ===============
+
+2.2.0
+=====
+
+New Features
+------------
+
+#. Substantial improvement to threading performance across the board
+   (Dmitry Korchemkin)
+#. Mixed precision solves + iterative refinement when using ``CUDA`` or
+   CPU based dense linear solvers, or ``EIGEN_SPARSE`` as the sparse
+   linear algebra library. (Sameer Agarwal & Joydeep Biswas)
+#. Cuda based CGNR and preconditioner support (Joydeep Biswas & Sameer
+   Agarwal)
+#. Nested Dissection (``NESDIS``) is now supported as an ordering method
+   in addition to ``AMD``. (Sameer Agarwal, Alex Stewart & Sergiu
+   Deitsch)
+#. **Power Bundle Adjustment** is available as a linear solver and as
+   a preconditioner by the name of ``SCHUR POWER SERIES EXPANSION``
+   (Mark Shachkov).
+#. Generalized Euler Angle conversions (hs293go@)
+
+
+Backward Incompatible API Changes
+---------------------------------
+
+#. :class:`LocalParameterization` has been removed, use
+   :class:`Manifold` instead.
+#. Ceres Solver now requires a C++17 compliant compiler.
+#. Ceres Solver now requires CMake version 3.16 or later.
+#. Ceres Solver now requires SuiteSparse version 4.5.6 or later.
+#. OpenMP and NO_THREADING backends have been removed. C++ threads is
+   how all threading is done.
+#. Support for ``CX_SPARSE`` as a sparse linear algebra backend has
+   been removed. Similar or better performance can be expected from
+   ``Eigen`` as the sparse linear algebra library.
+
+
+Bug Fixes & Minor Changes
+-------------------------
+#. Optimize the computation of the LM diagonal in TinySolver
+#. Improvements to multi-threaded performance for small problems that
+   had regressed due to changes to threading (Dmitrity Korchemkin)
+#. Fix handling of M_PI for MSVC (Sergiu Deitsch)
+#. Add a default value for Solver::Summary::linear_solver_ordering_type (Sameer Agarwal)
+#. Make sure that the code compiles well with CUDA 11 (Dmitriy
+   Korchemkin)
+#. Rework MSVC warning suppression (Sergiu Deitsch)
+#. Add an example for EvaluationCallback (Sameer Agarwal)
+#. Add an example for IterationCallback (Sameer Agarwal)
+#. Add end-to-end BA tests for SCHUR_POWER_SERIES_EXPANSION (Sameer Agarwal)
+#. Update documentation for linear solvers (Sameer Agarwal)
+#. Add an accessor for the CostFunctor in DynamicAutoDiffCostFunction (Sameer Agarwal)
+#. Runtime check for cudaMallocAsync support (Dmitriy Korchemkin)
+#. Remove cuda-memcheck based tests (Sameer Agarwal)
+#. Modernize ``Sphinx`` related CMake handling as well the ``Sphinx``
+   build process in the terminal. (Sergiu Deitsch)
+#. Fix macos ``sprintf`` security related warnings (Sergiu Deitsch)
+#. Lots of Cuda releated build system fixes (Sergiu Deitsch, Dmitriy
+   Korchemkin, Jason Mak)
+#. Improved windows build support (Sergiu Deitsch)
+#. Various documentation fixes (Maxim Smolskiy, Evan Levine)
+#. Improved handling of large Jacobians (Sameer Agarwal)
+#. Improved handling of infinite initial cost (Sameer Agarwal)
+#. Improved traits support for Jets (Sameer Agarwal)
+#. Improved tests for Euler angle conversion routines (@Hs293Go)
+#. Use a std::tuple to store ProductManifold for better efficiency
+   (Sergiu Deitsch)
+#. Allow default construction of ProductManifold when underlying
+   manifolds have default constructors (Sergiu Deitsch)
+#. Move LineManifold and SphereManifold into their own headers (Sameer
+   Agarwal)
+#. Fix a byte vs number of elements error when dealing with CUDA
+   workspace computations (Joydeep Biswas)
+#. Hide and prevent internal symbols from being exported (Sergiu
+   Deitsch)
+#. Switch to imported SuiteSparse, CXSparse & METIS targets.
+#. Improve compilation on Ubuntu 20.04 (Sergiu Deitsch)
+#. Update to using gtest 1.11.0 (Sameer Agarwal)
+#. Fix Euler angle conversion code to not rely on constexpr
+   constrctors for Jets. (Sameer Agarwal)
+#. BlockRandomAccessSparseMatrix now uses a BlockSparseMatrix as
+   storage instead of TripletSparseMatrix. (Dmitriy Korchemkin)
+#. Deduction guide for DynamicAutoDiffCostFunction (Sergiu Deitsch)
+#. Explicit conversions from long to ints (Alexander Ivanov)
+#. Unused code deletion/commenting and code modernization (Alexander
+   Ivanov)
+#. Improve the bazel build & tests (Alexander Ivanov)
+#. Fix a bug in QuaternionRotatePoint introduced by the use of hypot
+   earlier in this release cycle (Jonathan Taylor & Sameer Agarwal)
+#. Lots of GitHub CI improvements (Sergiu Deitsch & Dmitry Korchemkin)
+#. Improve the robustness of the Cuda based dense linear algebra tests
+   (Joydeep Biswas)
+#. Refactor storage & threading support in BlockRandomAccessMatrix and
+   its subclasses (Sameer Agarwal)
+#. Fix a bug in CoordinateDescentMinimizer related to uninitialized
+   variables (Sameer Agarwal)
+#. Remove OpenMP and NO_THREADS backends. (Sameer Agarwal)
+#. Fix version string parsing starting with SuiteSparse 6.0 (Sergiu
+   Deitsch)
+#. Use FindCUDAToolkit for CMake >= 3.17 (Alex Stewart)
+#. Add a const accessor for the Problem::Options struct used by
+   Problem. (Alex Stewart)
+#. Fix a serious performance regression when using SuiteSparse
+   introduced in `d09f7e9d5e
+   <https://github.com/ceres-solver/ceres-solver/commit/d09f7e9d5e3bfab2d7ec7e81fd6a55786edca17a>`_. (Sameer
+   Agarwal)
+#. Fix the build on QNX (Alex Stewart)
+#. Improve testing macros and documentation for Manifolds (Alex
+   Stewart)
+#. Improved code formatting (Tyler Hovanec)
+#. Better use of std::unique_ptr in the code (Mike Vitus)
+#. Fix a memory leak in ContextImpl (Sameer Agarwal)
+#. Faster locking when num_thread = 1 (Sameer Agarwal)
+#. Fix how x_norm is computed in TrustRegionMinimizer (Sameer Agarwal)
+#. Faster JACOBI preconditioner for CGNR (Sameer Agarwal)
+#. Convert internal enums to class enums (Sameer Agarwal)
+#. Improve the code in small_blas to be more compiler friendly (Sameer
+   Agarwal)
+#. Add the ability to specify the pivot threshold in
+   ::class::`Covariance::Options` (Sameer Agarwal)
+#. Modernize the internals to use C++17 (Sameer Agarwal)
+#. Choose SPMV algorithm based on the CUDA SDK Version (Joydeep
+   Biswas)
+#. Better defaults in ``bundle_adjuster.cc`` (Sameer Agarwal)
+#. Use ``foo.data()`` instead of ``&foo[0]`` (Sameer Agarwal)
+#. Fix GCC 12.1.1 LTO -Walloc-size-larger-than= warnings (Sergiu
+   Deitsch)
+#. Improved determinism in tests by re-using the same PRNG (Sergiu
+   Deitsch)
+#. Improved docs for ``vcpkg`` installation. (Sergiu Deitsch)
+#. Update FindGlog.cmake to create glog::glog target (KrisThielemans@)
+#. Improve consistency & correctness of Sphere & Line Manifolds
+   (Julio L. Paneque)
+#. Remove ``ceres/internal/random.h`` in favor of ``<random>``.
+#. Fix a crash in ``InnerProductComputer`` (Sameer Agarwal)
+#. Various fixes to improve compilation on windows using MinGW & MSVC
+   (Sergiu Deitsch)
+#. Fix fmin/fmax() to use Jet averaging on equality (Alex Stewart)
+#. Fix use of conditional preprocessor checks within a macro in tests
+   (Alex Stewart)
+#. Better support for ``CUDA memcheck`` (Joydeep Biswas)
+#. Improve the logic for linking to the platform specific threading
+   library (Sergiu Deitsch)
+#. Generate the version string at compile time (Sergiu Deitsch)
+#. :class:`NumericDiffFirstOrderFunction` can now take a dynamically
+   sized parameter vector. (Sameer Agarwal)
+#. Fix compilation with SuiteSparse 7.2.0 (Mark Shackov)
+
+2.1.0
+=====
+
+New Features
+------------
+
+#. Support for CUDA based dense solvers - ``DENSE_QR``,
+   ``DENSE_NORMAL_CHOLESKY`` & ``DENSE_SCHUR`` (Joydeep Biswas, Sameer
+   Agarwal)
+
+#. :class:`Manifold` is the new
+   :class:`LocalParameterization`. Version 2.1 is the transition
+   release where users can use both :class:`LocalParameterization` as
+   well as :class:`Manifold` objects as they transition from the
+   former to the latter. :class:`LocalParameterization` will be
+   removed in version 2.2. There should be no numerical change to the
+   results as a result of this change. (Sameer Agarwal, Johannes Beck,
+   Sergiu Deitsch)
+
+#. A number of changes to :class:`Jet` s (Sergiu Deitsch)
+
+   * :class:`Jet` gained support for, ``copysign``, ``fma`` (fused
+     multiply-add), ``midpoint`` (C++20 and above), ``lerp`` (C++20
+     and above), 3-argument ``hypot`` (C++17 and above), ``log10``,
+     ``log1p``, ``exp1m``, ``norm`` (squared :math:`L^2` norm).
+
+   * Quiet floating-point comparison: ``isless``, ``isgreater``,
+     ``islessgreater``, ``islessequal``, ``isgreaterequal``,
+     ``isunordered``, ``signbit``, ``fdim``
+
+   * Categorization and comparison operations are applied exclusively
+     and consistently to the scalar part of a Jet now: ``isnan``,
+     ``isinf``, ``isnormal``, ``isfinite``, ``fpclassify`` (new),
+     ``fmin``, ``fmax``
+
+   * It is now possible to safely compare a :class:`Jet` against a scalar
+     (or literal) without constructing a :class:`Jet` first (even if it's
+     nested):
+
+     .. code-block:: c++
+
+        Jet<Jet<Jet<T, N>, M>, O> x;
+        if (x == 2) { } // equivalent to x.a.a.a == 2
+
+
+     This enables interaction with various arithmetic functions that
+     expect a scalar like instance, such as ``boost::math::pow<-N>``
+     for reciprocal computation.
+
+#. Add :class:`NumericDiffFirstOrderFunction` (Sameer Agarwal)
+
+
+Backward Incompatible API Changes
+---------------------------------
+
+#. :class:`LocalParameterization` is deprecated. It will be removed in
+   version 2.2. Use :class:`Manifold` instead.
+#. Classification functions like ``IsFinite`` are deprecated. Use the
+   ``C++11`` functions (``isfinite``, ``isnan`` etc) going
+   forward. However to maintain consistent behaviour with comparison
+   operators, these functions only inspect the scalar part of the
+   :class:`Jet`.
+
+Bug Fixes & Minor Changes
+-------------------------
+
+#. Worked around an MSVC ordering bug when using C++17/20 (Sergiu
+   Deitsch)
+#. Added a CITATION.cff file. (Sergiu Deitsch)
+#. Updated included gtest version to 1.11.0. This should fix some
+   ``C++20`` compilation problems. (Sameer Agarwal).
+#. Workaround ``MSVC`` ``STL`` deficiency in ``C++17`` mode (Sergiu
+   Deitsch)
+#. Fix ``Jet`` test failures on ``ARMv8`` with recent ``Xcode``
+   (Sergiu Deitsch)
+#. Fix unused arguments of ``Make1stOrderPerturbation`` (Dmitriy
+   Korchemkin)
+#. Fix ``SuiteSparse`` path and version reporting (Sergiu Deitsch)
+#. Enable `GitHub` workflows and deprecate ``TravisCI`` (Sergiu
+   Deitsch)
+#. Add missing includes (Sergiu Deitsch, Sameer Agarwal)
+#. Fix path for ``cuda-memcheck`` tests (Joydeep Biswas)
+#. ClangFormat cleanup (Sameer Agarwal)
+#. Set ``CMP0057`` policy for ``IN_LIST`` operator in
+   ``FindSuiteSparse.cmake`` (Brent Yi)
+#. Do not define unusable import targets (Sergiu Deitsch)
+#. Fix Ubuntu 18.04 shared library build (Sergiu Deitsch)
+#. Force ``C++`` linker when building the ``C`` API (Sergiu Deitsch)
+#. Modernize the code to be inline with ``C++14`` (Sergiu Deitsch,
+   Sameer Agarwal)
+#. Lots of fixes to make Ceres compile out of the box on Windows
+   (Sergiu Deitsch)
+#. Standardize path handling using ``GNUImstallDirs`` (Sergiu Deitsch)
+#. Add final specifier to classes to help the compiler with
+   devirtualization (Sameer Agarwal)
+#. LOTs of clean & modernization of the CMake build files (Sergiu
+   Deitsch & Alex Stewart)
+#. Simplification to the symbol export logic (Sergiu Deitsch)
+#. Add cmake option ``ENABLE_BITCODE`` for iOS builds (John Harrison)
+#. Add const accessor for functor wrapped by auto/numeric-diff objects
+   (Alex Stewart)
+#. Cleanup & refactor ``jet_test.cc``. (Sameer Agarwal)
+#. Fix docs of supported sparse backends for mixed precision solvers
+   (Alex Stewart)
+#. Fix C++20 compilation (Sergiu Deitsch)
+#. Add an example for ``BiCubicInterpolator`` (Dmitriy Korcchemkin)
+#. Add a section to the documentation on implicit and inverse function
+   theorems (Sameer Agarwal)
+#. Add a note about Trigg's correction (Sameer Agarwal)
+#. Fix the docs for ``Problem::RemoveResidualBlock`` &
+   ``Problem::RemoveParameterBlock`` (Sameer Agarwal)
+#. Fix an incorrect check in ``reorder_program.cc`` (William Gandler)
+#. Add ``function_tolerance`` based convergence testing to ``TinySolver``
+   (Sameer Agarwal).
+#. Fix a number of typos in ``rotation.h`` (@yiping)
+#. Fix a typo in ``interfacing_with_autodiff.rst`` (@tangobravo)
+#. Fix a matrix sizing bug in covariance_impl.cc (William Gandler)
+#. Fix a bug in ``system_test.cc`` (William Gandler)
+#. Fix the Jacobian computation in ``trust_region_minimizer_test.cc``
+   (William Gandler)
+#. Fix a bug in ``local_parameterization_test.cc`` (William Gandler)
+#. Add accessors to ``GradientProblem`` (Sameer Agarwal)
+#. Refactor ``small_blas_gemm_benchmark`` (Ahmed Taei)
+#. Refactor ``small_blas_test`` (Ahmed Taei)
+#. Fix dependency check for building documentation (Sumit Dey)
+#. Fix an errant double link in the docs (Timon Knigge)
+#. Fix a typo in the version history (Noah Snavely)
+#. Fix typo in LossFunctionWrapper sample code (Dmitriy Korchemkin)
+#. Add fmax/fmin overloads for scalars (Alex Karatarakis)
+#. Introduce benchmarks for ``Jet`` operations (Alexander Karatarakis)
+#. Fix typos in documentation and fix the documentation for
+   ``IterationSummary`` (Alexander Karatarakis)
+#. Do not check MaxNumThreadsAvailable if the thread number is set
+   to 1. (Fuhao Shi)
+#. Add a macro ``CERES_GET_FLAG``. (Sameer Agarwal)
+#. Reduce log spam in ``covariance_impl.cc`` (Daniel Henell)
+#. Fix FindTBB version detection with TBB >= 2021.1.1 (Alex Stewart)
+#. Fix Eigen3_VERSION (Florian Berchtold)
+#. Allow Unity Build (Tobias Schluter)
+#. Make miniglog's InitGoogleLogging argument const (Tobias Schluter)
+#. Use portable expression for constant 2/sqrt(pi) (Tobias Schluter)
+#. Fix a number of compile errors related (Austin Schuch)
+
+   * ``format not a string literal``
+   * ``-Wno-maybe-uninitialized error``
+   * ``nonnull arg compared to NULL``
+   * ``-Wno-format-nonliteral``
+   * ``-Wmissing-field-initializers``
+   * ``-Werror``
+
+#. Fix ``cc_binary`` includes so examples build as an external repo
+   (Austin Schuh)
+#. Fix an explicit double in TinySolver (Bogdan Burlacu)
+#. Fix unit quaternion rotation (Mykyta Kozlov)
+
+
+2.0.0
+=====
+
+New Features
+------------
+#. Ceres Solver now requires a C++14 compatible compiler, Eigen
+   version >= 3.3 & CMake version >= 3.5, XCode version >= 11.2 (Sameer
+   Agarwal, Alex Stewart & Keir Mierle)
+#. C++ threading based multi-threading support. (Mike Vitus)
+#. :func:`Problem::AddResidualBlock`, :class:`SizedFunction`,
+   :class:`AutoDiffCostFunction`, :class:`NumericDiffCostFunction`
+   support an arbitrary number of parameter blocks using variadic
+   templates (Johannes Beck)
+#. On Apple platforms, support for Apple's Accelerate framework as a
+   sparse linear algebra library. (Alex Stewart)
+#. Significantly faster AutoDiff (Darius Rueckert)
+#. Mixed precision solves when using
+   ``SPARSE_NORMAL_CHOLESKY``. (Sameer Agarwal)
+#. ``LocalParameterization`` objects can have a zero sized tangent
+   size, which effectively makes the parameter block constant. In
+   particular, this allows for a ``SubsetParameterization`` that holds
+   all the coordinates of a parameter block constant. (Sameer Agarwal
+   & Emil Ernerfeldt)
+#. Visibility based preconditioning now works with ``Eigen`` and
+   ``CXSparse``. (Sameer Agarwal)
+#. Added :func:`Problem::EvaluateResidualBlock` and
+   :func:`Problem::EvaluateResidualBlockAssumingParametersUnchanged`. (Sameer
+   Agarwal)
+#. ``GradientChecker`` now uses ``RIDDERS`` method for more accurate
+   numerical derivatives. (Sameer Agarwal)
+#. Covariance computation uses a faster SVD algorithm (Johannes Beck)
+#. A new local parameterization for lines (Johannes Beck)
+#. A new (``SUBSET``) preconditioner for problems with general
+   sparsity. (Sameer Agarwal)
+#. Faster Schur elimination using faster custom BLAS routines for
+   small matrices. (yangfan)
+#. Automatic differentiation for ``FirstOrderFunction`` in the form of
+   :class:`AutoDiffFirstOrderFunction`. (Sameer Agarwal)
+#. ``TinySolverAutoDiffFunction`` now supports dynamic number of residuals
+   just like ``AutoDiffCostFunction``. (Johannes Graeter)
+
+Backward Incompatible API Changes
+---------------------------------
+
+#. ``EvaluationCallback`` has been moved from ``Solver::Options`` to
+   ``Problem::Options`` for a more correct API.
+#. Removed ``Android.mk`` based build.
+#. ``Solver::Options::num_linear_solver_threads`` is no more.
+
+Bug Fixes & Minor Changes
+-------------------------
+#. Use CMAKE_PREFIX_PATH to pass Homebrew install location (Alex Stewart)
+#. Add automatic differentiation support for ``Erf`` and ``Erfc``. (Morten Hennemose)
+#. Add a move constructor to ``AutoDiffCostFunction``, ``NumericDiffCostFunction``, ``DynamicAutoDiffCostFunction`` and ``DynamicNumericDiffCostFunction``. (Julian Kent & Sameer Agarwal)
+#. Fix potential for mismatched release/debug TBB libraries (Alex Stewart)
+#. Trust region minimizer now reports the gradient of the current state, rather than zero when it encounters an unsuccessful step (Sameer Agarwal & Alex Stewart)
+#. Unify symbol visibility configuration for all compilers (Taylor Braun-Jones)
+#. Fix the Bazel build so that it points GitLab instead of the old BitBucket repo for Eigen (Sameer Agarwal)
+#. Reformat source to be clang-format clean and add a script to format the repo using clang-format. (Nikolaus Demmel)
+#. Various documentation improvements (Sameer Agarwal, Carl Dehlin,
+   Bayes Nie, Chris Choi, Frank, Kuang Fangjun, Dmitriy Korchemkin,
+   huangqinjin, Patrik Huber, Nikolaus Demmel, Lorenzo Lamia)
+#. Huge number of build system simplification & cleanups (Alex
+   Stewart, NeroBurner, Alastair Harrison, Linus Mårtensson, Nikolaus Demmel)
+#. Intel TBB based threading removed (Mike Vitus)
+#. Allow :class:`SubsetParameterization` to accept an empty vector of
+   constant parameters. (Sameer Agarwal & Frédéric Devernay)
+#. Fix a bug in DynamicAutoDiffCostFunction when all parameters are
+   constant (Ky Waegel & Sameer Agarwal)
+#. Fixed incorrect argument name in ``RotationMatrixToQuaternion``
+   (Alex Stewart & Frank Dellaert)
+#. Do not export class template LineParameterization (huangqinjin)
+#. Change the type of parameter index/offset to match their getter/setter (huangqinjin)
+#. Initialize integer variables with integer instead of double (huangqinjin)
+#. Add std::numeric_limit specialization for Jets (Sameer Agarwal)
+#. Fix a MSVC type deduction bug in ComputeHouseholderVector (Sameer Agarwal)
+#. Allow LocalParameterizations to have zero local size. (Sameer Agarwal)
+#. Add photometric and relative-pose residuals to autodiff benchmarks (Nikolaus Demmel)
+#. Add a constant cost function to the autodiff benchmarks (Darius Rueckert)
+#. Add const to GetCovarianceMatrix#. (Johannes Beck)
+#. Fix Tukey loss function (Enrique Fernandez)
+#. Fix 3+ nested Jet constructor (Julian Kent)
+#. Fix windows MSVC build. (Johannes Beck)
+#. Fix invert PSD matrix. (Johannes Beck)
+#. Remove not used using declaration (Johannes Beck)
+#. Let Problem::SetParameterization be called more than once. (Sameer Agarwal)
+#. Make Problem movable. (Sameer Agarwal)
+#. Make EventLogger more efficient. (Sameer Agarwal)
+#. Remove a CHECK failure from covariance_impl.cc (Sameer Agarwal)
+#. Add a missing cast in rotation.h (Sameer Agarwal)
+#. Add a specialized SchurEliminator and integrate it for the case <2,3,6> (Sameer Agarwal)
+#. Remove use of SetUsage as it creates compilation problems. (Sameer Agarwal)
+#. Protect declarations of lapack functions under CERES_NO_LAPACK (Sameer Agarwal)
+#. Drop ROS dependency on catkin (Scott K Logan)
+#. Explicitly delete the copy constructor and copy assignment operator (huangqinjin)
+#. Use selfAdjoingView<Upper> in InvertPSDMatrix. (Sameer Agarwal)
+#. Speed up InvertPSDMatrix (Sameer Agarwal)
+#. Allow Solver::Options::max_num_line_search_step_size_iterations = 0. (Sameer Agarwal)
+#. Make LineSearchMinizer work correctly with negative valued functions. (Sameer Agarwal)
+#. Fix missing declaration warnings in Ceres code (Sergey Sharybin)
+#. Modernize ProductParameterization. (Johannes Beck)
+#.  Add some missing string-to-enum-to-string convertors. (Sameer Agarwal)
+#. Add checks in rotation.h for inplace operations. (Johannes Beck)
+#. Update Bazel WORKSPACE for newest Bazel (Keir Mierle)
+#. TripletSparseMatrix: guard against self-assignment (ngoclinhng)
+#. Fix Eigen alignment issues. (Johannes Beck)
+#. Add the missing <array> header to fixed_array.h (Sameer Agarwal)
+#. Switch to FixedArray implementation from abseil. (Johannes Beck)
+#. IdentityTransformation -> IdentityParameterization (Sameer Agarwal)
+#. Reorder initializer list to make -Wreorder happy (Sam Hasinoff)
+#. Reduce machoness of macro definition in cost_functor_to_function_test.cc (Sameer Agarwal)
+#. Enable optional use of sanitizers (Alex Stewart)
+#. Fix a typo in cubic_interpolation.h (Sameer Agarwal)
+#. Update googletest/googlemock to db9b85e2. (Sameer Agarwal)
+#. Fix Jacobian evaluation for constant parameter (Johannes Beck)
+#. AutoDiffCostFunction: use static_assert to check if the correct overload of the constructor is used. (Christopher Wecht)
+#. Avoid additional memory allocation in gradient checker (Justin Carpentier)
+#. Swap the order of definition of IsValidParameterDimensionSequence. (Sameer Agarwal)
+#. Add ParameterBlock::IsSetConstantByUser() (Sameer Agarwal)
+#. Add parameter dims for variadic sized cost function (Johannes Beck)
+#. Remove trailing zero parameter block sizes (Johannes Beck)
+#. Adding integer sequence and algorithms (Johannes Beck)
+#. Improve readability of LocalParameterization code. (Sameer Agarwal)
+#. Simplifying Init in manual contructor (Johannes Beck)
+#. Fix typo in NIST url. (Alessandro Gentilini)
+#. Add a .clang-format file. (Sameer Agarwal)
+#. Make ConditionedCostFunction compatible with repeated CostFunction. (Sameer Agarwal)
+#. Remove conversions from a double to a Jet. (Kuang Fangjun)
+#. close the file on return. (Kuang Fangjun)
+#. Fix an error in the demo code for ceres::Jet. (Kuang Fangjun)
+#. Recheck the residual after a new call. (Kuang Fangjun)
+#. avoid recomputation. (Kuang Fangjun)
+#. Fix calculation of Solver::Summary::num_threads_used. (Alex Stewart)
+#. Convert calls to CHECK_NOTNULL to CHECK. (Sameer Agarwal)
+#. Add a missing <cstdint> to block_structure.h (Sameer Agarwal)
+#. Fix an uninitialized memory error in EvaluationCallbackTest (Sameer Agarwal)
+#. Respect bounds when using Solver::Options::check_gradients (Sameer Agarwal)
+#. Relax the limitation that SchurEliminator::Eliminate requires a rhs. (Sameer Agarwal)
+#. Fix three out of bounds errors in CompressedRowSparseMatrix. (Sameer Agarwal)
+#. Add Travis CI support. (Alex Stewart)
+#. Refactor Ceres threading option configuration. (Alex Stewart)
+#. Handle NULL permutation from SuiteSparseQR (Pau Gargallo)
+#. Remove chunk shuffle in multithreaded SchurEliminator (Norbert Wenzel)
+#. Add /bigobj to nist on MSVC. (Alex Stewart)
+#. Fix 'xxx.cc has no symbols' warnings. (Alex Stewart)
+#. Add a typedef to expose the scalar type used in a Jet. (Sameer Agarwal)
+#. Fix a use after free bug in the tests. (Sameer Agarwal)
+#. Simplify integration tests. (Sameer Agarwal)
+#. Converts std::unique_lock to std::lock_guard. (Mike Vitus)
+#. Bring the Bazel build in sync with the CMake build. (Sameer Agarwal)
+#. Adds a ParallelFor wrapper for no threads and OpenMP. (Mike Vitus)
+#. Improve the test coverage in small_blas_test (Sameer Agarwal)
+#. Handle possible overflow in TrustRegionStepEvaluator. (Sameer Agarwal)
+#. Fix lower-bound on result of minimising step-size polynomial. (Alex Stewart)
+#. Adds missing functional include in thread_pool.h (Mike Vitus)
+
 
 1.14.0
 ======
@@ -966,7 +1434,7 @@ Backward Incompatible API Changes
                       NULL, /* No cost */
                       &initial_residuals,
                       NULL, /* No gradient */
-                      NULL  /* No jacobian */ );
+                      NULL  /* No jacobian */);
 
      Solver::Options options;
      Solver::Summary summary;
@@ -977,7 +1445,7 @@ Backward Incompatible API Changes
                       NULL, /* No cost */
                       &final_residuals,
                       NULL, /* No gradient */
-                      NULL  /* No jacobian */ );
+                      NULL  /* No jacobian */);
 
 
 New Features
@@ -1375,8 +1843,8 @@ Origins
 =======
 
 Ceres Solver grew out of the need for general least squares solving at
-Google. In early 2010, Sameer Agarwal and Fredrik Schaffalitzky
-started the development of Ceres Solver. Fredrik left Google shortly
+Google. In early 2010, Sameer Agarwal and Frederik Schaffalitzky
+started the development of Ceres Solver. Frederik left Google shortly
 thereafter and Keir Mierle stepped in to take his place. After two
 years of on-and-off development, Ceres Solver was released as open
 source in May of 2012.
