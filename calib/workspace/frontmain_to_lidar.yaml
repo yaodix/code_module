@@ -1,0 +1,47 @@
+%YAML:1.0
+---
+
+type: mono_camera
+car: yika
+date: "20250312"
+sensor_name: front_main
+channel_name: /drivers/camera/frontmain/image/compressed
+model: pinhole
+height: 2160
+width: 3840
+hfov: 120
+vfov: 60
+a0: 0.
+a2: 0.
+a3: 0.
+a4: 0.
+cx: 0.
+cy: 0.
+stretch_matrix: !!opencv-matrix
+   rows: 2
+   cols: 2
+   dt: d
+   data: [ 1., 0., 0., 1. ]
+M: !!opencv-matrix
+   rows: 3
+   cols: 3
+   dt: d
+   data: [ 1904.6, 0., 1920.2, 0.,
+       1906.1, 1086.2, 0., 0., 1. ]
+D: !!opencv-matrix
+   rows: 1
+   cols: 5
+   dt: d
+   data: [ -0.3198, 0.112,
+       0.00021485, 6.4215e-06,
+       -0.0187 ]
+Tr_cam_to_lidar: !!opencv-matrix
+   rows: 4
+   cols: 4
+   dt: d
+   data: [ 0.0084219,  0.0239859,
+        0.9996768, 0.5480117235062314,
+        -0.9999303, -0.0080677,
+       0.0086176, -0.06893379271456662,
+       0.0082718, -0.9996797,
+       0.0239163, -0.45476354640306543, 0., 0., 0., 1. ]

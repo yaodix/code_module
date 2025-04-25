@@ -15,15 +15,15 @@ private:
     int stateSize; // state variable's dimenssion
     int measSize;  // measurement variable's dimession
     int uSize;     // control variables's dimenssion
-    Eigen::VectorXd x;
+    Eigen::VectorXd x;  // 系统状态
     Eigen::VectorXd z;  // k时刻测量值
     Eigen::MatrixXd A;  // 系统参数
-    Eigen::MatrixXd B;  // 系统参数
+    Eigen::MatrixXd B;  // 系统参数，控制矩阵
     Eigen::VectorXd u;
     Eigen::MatrixXd P;  // coveriance
     Eigen::MatrixXd H;  // 测量系统的参数
-    Eigen::MatrixXd R;  // measurement noise covariance
-    Eigen::MatrixXd Q;  // process noise covariance
+    Eigen::MatrixXd R;  // measurement noise covariance， 高斯分布的方差
+    Eigen::MatrixXd Q;  // process noise covariance， 高斯分布的方差
 
 public:
     KalmanFilter(int stateSize_, int measSize_,int uSize_);

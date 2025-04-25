@@ -1,0 +1,18 @@
+# yika-20250311
+header:
+  stamp:
+    secs: 1422601952
+    nsecs: 288805456
+  seq: 0
+  frame_id: vehicle
+transform:
+  translation:  
+    x: 1.535
+    y: 0 
+    z: 0.124
+  rotation:
+    x: 0
+    y: 0
+    z: -0.0024575
+    w: 0.999997
+child_frame_id: rsHelios
