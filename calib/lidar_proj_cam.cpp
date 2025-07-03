@@ -157,8 +157,8 @@ int main() {
     
     // 1. 创建或加载点云
     PointCloud::Ptr cloud(new PointCloud);
-    std::string pcd_file = "/home/yao/Downloads/yao/1740127535524983985.pcd";
-    std::string img_file = "/home/yao/Downloads/yao/1740127535537373241.jpg";
+    std::string pcd_file = "/home/yao/myproject/code_module/calib/workspace/1740127535524983985.pcd";
+    std::string img_file = "/home/yao/myproject/code_module/calib/workspace/1740127535537373241.jpg";
 
     if (pcl::io::loadPCDFile<PointT>(pcd_file, *cloud) == -1) {
         std::cerr << "Failed to load PCD file!" << std::endl;
@@ -193,7 +193,7 @@ int main() {
     projectPointCloudToImage(cloud, T_lidar2cam, K, dist_coeffs, image);
     
     // 显示结果
-    cv::imwrite("/home/yao/Downloads/yao/1740127535537373241_1.png", image);
+    cv::imwrite("/home/yao/myproject/code_module/calib/workspace/1740127535537373241_pro.png", image);
     cv::resize(image, image, cv::Size(1920, 1080));
     // cv::imshow("Point Cloud Projection", image);
 
