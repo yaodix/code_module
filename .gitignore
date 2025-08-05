@@ -8,3 +8,4 @@ game-programming-patterns/sequencing_patterns/build
 game-programming-patterns/space_division/build
 opencv/__pycache__
 opencv/fft_py/__pycache__/
+calib/workspace/a04_*.*
