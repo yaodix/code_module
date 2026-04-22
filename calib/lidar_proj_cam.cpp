@@ -304,8 +304,8 @@ int main() {
     // return 0;
     // 1. 创建或加载点云
     PointCloud::Ptr cloud(new PointCloud);
-    std::string pcd_file = "/media/yao/t7/A04/highway/record_20250729_150612_dump/20250729_150612_C.record.00001/top/1753772846.600.pcd";
-    std::string img_file = "/media/yao/t7/A04/highway/record_20250729_150612_dump/20250729_150612_C.record.00001/top/1753772846.687.jpg";
+    std::string pcd_file = "/media/yao/t7/0814_a04/record_20230315_231710_dump/20230315_231710_C.record.00000/right/1678893432.215.pcd";
+    std::string img_file = "/media/yao/t7/0814_a04/record_20230315_231710_dump/20230315_231710_C.record.00000/c4_frontmain/1678893431.119.jpg";
     // std::string img_file = "/media/yao/t7/A04/highway/record_20250729_150302_dump/20250729_150302_C.record.00001/top/1753772649.587.jpg";
 
     if (pcl::io::loadPCDFile<PointT>(pcd_file, *cloud) == -1) {
@@ -315,10 +315,12 @@ int main() {
 
     // 2. 相机外参: 相机到车体的变换矩阵 (4x4)
     Eigen::Matrix4d T_camera2lidar = Eigen::Matrix4d::Identity();
-    T_camera2lidar << -2.6110081465080034e-02, -4.5484681048058438e-02, 9.9862375669510650e-01, 7.0000000000000007e-02,
-       -9.9964557368155538e-01, 6.3796411690987967e-03, -2.5846222111392127e-02, -2.9999999999999999e-02,
-       -5.1952540616182503e-03, -9.9894466511839919e-01, -4.5635133030651941e-02, -9.0000000000000011e-02,
-                      0.0f, 0.0f, 0.0f, 1.0f;
+    T_camera2lidar <<-2.5110427220096015e-02, -4.5492040394259567e-02,
+       9.9864905783042446e-01, 7.0000000000000007e-02,
+       -9.9966550748086380e-01, 7.3300972055434684e-03,
+       -2.4802073058257424e-02, -2.9999999999999999e-02,
+       -6.1918977586937884e-03, -9.9893780784177200e-01,
+       -4.5660885519463464e-02, -9.0000000000000011e-02, 0., 0., 0., 1.;
     Eigen::Isometry3d cam2lidar = Eigen::Isometry3d(T_camera2lidar);
     Eigen::Isometry3d lidar2cam = cam2lidar.inverse();          
     Eigen::Matrix4d T_lidar2cam;
@@ -330,43 +332,31 @@ int main() {
     T_camera2veh << -0.02407827477735782, -0.06217649697931055, 0.9977746839377756, 6.3650000000000002e+00,
        -0.9996607517841355, 0.01141177306837478, -0.02341266276639763, 0.,
        -0.009930660910694731, -0.9979999271837737, -0.06243017952127879,
-       2.6050000000000000e+00,
-                      0.0f, 0.0f, 0.0f, 1.0f;
+       2.6050000000000000e+00, 0., 0., 0., 1.;
     Eigen::Isometry3d cam2veh = Eigen::Isometry3d(T_camera2veh);
 
-    // 
-    // 分步初始化 lidar2veh 变量
-    // 1. 定义四元数（这里假设示例值，需替换为实际值）
-    Eigen::Quaterniond q_lidar2veh(0.999957, 0.00124991, 0.00910862 , 0.00110702); // w, x, y, z
-    // 2. 定义平移向量（这里假设示例值，需替换为实际值）
-    Eigen::Vector3d t_lidar2veh(6.195, 0.0, 2.705); // x, y, z
-    // 3. 初始化 Isometry3d 对象
-    Eigen::Isometry3d lidar2veh = Eigen::Isometry3d::Identity();
-    // 设置旋转部分
-    lidar2veh.linear() = q_lidar2veh.toRotationMatrix();
-    // 设置平移部分
-    lidar2veh.translation() = t_lidar2veh;
+    Eigen::Matrix4d T_left2top = Eigen::Matrix4d::Identity();
+    T_left2top << -0.836869, -0.5474, -0.00188732, -0.133893,
+          0.547395, -0.83687, 0.00277469, 1.32711,
+          -0.00309831,  0.00128894,  0.999994, -1.45176,
+          0, 0, 0, 1;
+    Eigen::Isometry3d left2top = Eigen::Isometry3d(T_left2top);
 
+    Eigen::Matrix4d T_right2top = Eigen::Matrix4d::Identity();
+    T_right2top << 0.856865, -0.515529, 0.00348773, -0.155782,
+          0.51544, 0.856544, -0.0255582, -1.3059,
+          0.0101886, 0.0236976, 0.999667, -1.52382,
+          0, 0, 0, 1;
+    Eigen::Isometry3d right2top = Eigen::Isometry3d(T_right2top);
 
-    Eigen::Isometry3d lidar2cam_2 = cam2veh.inverse() *  lidar2veh;
+    Eigen::Isometry3d side2cam = lidar2cam*right2top;  // 坐标系连续变换
 
-    // lidar2cam 转换到欧拉角
-    Eigen::Vector3d euler_angles = lidar2cam.linear().eulerAngles(2, 1, 0);
-    std::cout << "lidar2cam 欧拉角: " << euler_angles.transpose()* 180.0 / M_PI << std::endl;
-    std::cout << "lidar2cam 平移: " << lidar2cam.translation().transpose() << std::endl;
-
-    //lidar2cam_2 转换到欧拉角
-    Eigen::Vector3d euler_angles_2 = lidar2cam_2.linear().eulerAngles(2, 1, 0);
-    std::cout << "lidar2cam_com 欧拉角: " << euler_angles_2.transpose() * 180.0 / M_PI << std::endl;
-    std::cout << "lidar2cam_com 平移: " << lidar2cam_2.translation().transpose() << std::endl;
-       
-    T_lidar2cam = lidar2cam_2.matrix();
+    Eigen::Matrix4d T_side2cam = side2cam.matrix();
 
     // 3. 相机内参矩阵 (3x3)
     Eigen::Matrix3d K;
-    K << 3.7900999999999999e+03/2., 0., 1.9352000000000000e+03/2.,
-         0., 3.7883000000000002e+03/2., 1.0685999999999999e+03/2., 
-         0., 0., 1.;
+    K <<3.7900999999999999e+03/2, 0., 1.9352000000000000e+03/2, 0.,
+       3.7883000000000002e+03/2, 1.0685999999999999e+03/2, 0., 0., 1. ;
     
     // 4. 畸变系数 (k1, k2, p1, p2, k3)
     cv::Mat dist_coeffs = (cv::Mat_<double>(5, 1) << -3.1950000000000001e-01, -3.9560000000000001e-01,
@@ -378,19 +368,19 @@ int main() {
     cv::Mat raw_img = image.clone();
     
     // 投影点云到图像
-    projectPointCloudToImage(cloud, T_lidar2cam, K, dist_coeffs, image);
+    projectPointCloudToImage(cloud, T_side2cam, K, dist_coeffs, image);
     // 显示结果
-    cv::imwrite("/home/yao/myproject/code_module/calib/workspace/a04_proj_trigger.png", image);
+    cv::imwrite("/home/yao/myproject/code_module/calib/workspace/a04_proj_right.png", image);
     // cv::resize(image, image, cv::Size(1920, 1080));
     // cv::imshow("Point Cloud Projection", image);
 
     // cv::waitKey(0);
 
     // 点云着色
-    pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_colored(new pcl::PointCloud<pcl::PointXYZRGB>);
-    colorPointCloudByImage(cloud, T_lidar2cam, K, dist_coeffs, raw_img, cloud_colored);
+    // pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_colored(new pcl::PointCloud<pcl::PointXYZRGB>);
+    // colorPointCloudByImage(cloud, T_lidar2cam, K, dist_coeffs, raw_img, cloud_colored);
 
-    pcl::io::savePCDFile("/home/yao/myproject/code_module/calib/workspace/a04_colored.pcd", *cloud_colored);
+    // pcl::io::savePCDFile("/home/yao/myproject/code_module/calib/workspace/a04_colored.pcd", *cloud_colored);
 
     
     return 0;
